@@ -36,6 +36,10 @@ func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
 	render.RenderTemplate(w, "home.page.htm", &models.TemplateData{})
 }
 
+func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
+	render.RenderTemplate(w, "expenses.page.htm", &models.TemplateData{})
+}
+
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
 	stringMap := make(map[string]string)
 	stringMap["test"] = "Hello, again."
