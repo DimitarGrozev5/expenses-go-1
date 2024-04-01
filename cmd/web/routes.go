@@ -18,6 +18,7 @@ func routes(app *config.AppConfig) http.Handler {
 
 	mux.Get("/", handlers.Repo.Home)
 	mux.Get("/about", handlers.Repo.About)
+	mux.Get("/expenses", handlers.Repo.Expenses)
 	mux.Get("/static/*", handlers.Repo.Static)
 
 	return mux
