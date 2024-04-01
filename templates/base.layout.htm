@@ -1,25 +1,66 @@
 {{define "base"}}
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expenses App</title>
 
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
 
-    {{block "css" .}}
-
-    {{end}}
-</head>
-<body>
-    {{block "content" .}}
-
-    {{end}}
-
-    {{block "js" .}}
-
-    {{end}}
-</body>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="stylesheet" href="/static/css/hb.css" />
+  </head>
+  <body class="bg-primary-100 flex flex-col items-stretch h-full">
+    <header
+      class="bg-primary-600 text-primary-50 py-4 px-3 flex flex-row items-center"
+    >
+      <h1 class="text-xl flex-1">Expenses App</h1>
+      <div class="self-stretch relative flex flex-col justify-center">
+        <label class="hamburger-menu" id="hamburger-menu-toggle">
+          <input type="checkbox" id="hamburger-menu-input" />
+        </label>
+        <aside
+          class="sidebar shadow-md flex felx-col items-stretch gap-4"
+          id="hamburger-sidebar"
+        >
+          <nav>
+            <div>This</div>
+            <div>is</div>
+            <div>the</div>
+            <div>Sidebar</div>
+          </nav>
+        </aside>
+      </div>
+    </header>
+    <main
+      class="flex-1 overflow-auto flex flex-col items-stretch gap-4 px-4 py-2"
+    >
+      {{block "content" .}}{{end}}
+    </main>
+    <footer class="flex flex-row items-stretch bg-primary-500">
+      <nav class="flex-1 flex flex-row items-stretch">
+        <ul class="flex-1 flex flex-row items-end justify-between px-2 pt-4">
+          <li class="bg-primary-600 text-primary-50 p-3 rounded-t-md pb-6">
+            <a href="/expenses">Expenses</a>
+          </li>
+          <li class="bg-primary-600 text-primary-50 p-3 rounded-t-md">
+            <a href="/categories">Categories</a>
+          </li>
+          <li class="bg-primary-600 text-primary-50 p-3 rounded-t-md">
+            <a href="/accounts">Accounts</a>
+          </li>
+          <li class="bg-primary-600 text-primary-50 p-3 rounded-t-md">
+            <a href="/history">History</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+    <script src="/static/js/hm.js"></script>
+    <script src="/static/js/dialog.js"></script>
+  </body>
 </html>
 {{end}}
