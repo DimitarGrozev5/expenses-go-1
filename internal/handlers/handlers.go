@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/dimitargrozev5/expenses-go-1/pkg/config"
@@ -33,11 +34,17 @@ func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
 
 	m.App.Session.Put(r.Context(), "remote_ip", remoteIp)
 
-	render.RenderTemplate(w, "home.page.htm", &models.TemplateData{})
+	render.RenderTemplate(w, r, "home.page.htm", &models.TemplateData{})
 }
 
 func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, "expenses.page.htm", &models.TemplateData{})
+	render.RenderTemplate(w, r, "expenses.page.htm", &models.TemplateData{})
+}
+
+func (m *Repository) PostExpenses(w http.ResponseWriter, r *http.Request) {
+	action := r.Form.Get("action")
+
+	w.Write([]byte(fmt.Sprintf("Post Expenses. Type: %s", action)))
 }
 
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +54,7 @@ func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
 	remoteIp := m.App.Session.GetString(r.Context(), "remote_ip")
 	stringMap["remote_ip"] = remoteIp
 
-	render.RenderTemplate(w, "about.page.htm", &models.TemplateData{StringMap: stringMap})
+	render.RenderTemplate(w, r, "about.page.htm", &models.TemplateData{StringMap: stringMap})
 }
 
 func (m *Repository) Static(w http.ResponseWriter, r *http.Request) {

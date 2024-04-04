@@ -1,6 +1,6 @@
 module github.com/dimitargrozev5/expenses-go-1
 
-go 1.21.4
+go 1.22.1
 
 require (
 	github.com/go-chi/chi v1.5.5

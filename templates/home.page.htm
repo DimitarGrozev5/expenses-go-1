@@ -1,5 +1,58 @@
-{{template "base" .}}
+{{template "base" .}} {{define "content"}}
+<button id="ttt">new</button>
+<button id="vvv">view</button>
+<form class="card">
+  <div class="card-title">Add</div>
 
-{{define "content"}}
-<h1 class="text-red-500">This is the home page</h1>
+  <div class="card-input">
+    <label>Amount:</label>
+    <input value="15" />
+  </div>
+
+  <div class="card-input">
+    <label>Tag:</label>
+    <input value="Магазин" />
+  </div>
+
+  <div class="card-input">
+    <label>Date:</label>
+    <input value="2024-04-02 12:53" />
+  </div>
+
+  <div class="card-input">
+    <label for="category">Category:</label>
+    <select id="category" name="category">
+      <option value="1">Храна</option>
+      <option value="2">Ресторанти</option>
+    </select>
+  </div>
+
+  <div class="card-input">
+    <label for="account">Account:</label>
+    <select id="account" name="account">
+      <option value="1">Кеш</option>
+      <option value="2">ДСК</option>
+    </select>
+  </div>
+
+  <div class="card-controls">
+    <button class="card-btn-add">Add</button>
+    <button class="card-btn-cancel">Cancel</button>
+  </div>
+</form>
+
+<script>
+  window.addEventListener("load", () => {
+    const btnNew = document.getElementById("ttt");
+    const btnView = document.getElementById("vvv");
+    const form = document.querySelector("form.card");
+
+    btnNew.addEventListener("click", () => {
+      form.classList.toggle("new");
+    });
+    btnView.addEventListener("click", () => {
+      form.classList.toggle("view");
+    });
+  });
+</script>
 {{end}}

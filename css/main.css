@@ -34,4 +34,63 @@
   .dialog::backdrop {
     @apply bg-black opacity-50;
   }
+
+  input,
+  select {
+    @apply border border-primary-500 rounded-md p-2;
+  }
+
+  .card {
+    @apply border border-primary-400 rounded-md p-4 bg-primary-200 transition-all duration-1000 overflow-hidden;
+  }
+
+  .card.view input,
+  .card.view select {
+    @apply transition-all duration-1000 border border-primary-500 rounded-md p-2;
+  }
+
+  .card > .card-title {
+    @apply text-center text-lg font-bold mb-3 transition-all duration-1000 opacity-100 h-7;
+  }
+
+  .card > .card-input {
+    @apply flex flex-col gap-1 mb-3 transition-all duration-1000 h-20 opacity-100;
+  }
+
+  .card > .card-controls {
+    @apply flex flex-row items-center justify-end gap-4 transition-all duration-1000;
+  }
+
+  .card .card-btn-add {
+    @apply w-14 transition-all duration-1000;
+  }
+
+  .card .card-btn-cancel {
+    @apply w-14 transition-all duration-1000;
+  }
+
+  .card.view input,
+  .card.view select {
+    @apply border-primary-200 p-0 bg-primary-200;
+  }
+
+  .card.new {
+    @apply border border-primary-400 rounded-md p-4 bg-primary-200;
+  }
+
+  .card.new > .card-title {
+    @apply -translate-y-10 opacity-0 h-0 mb-0;
+  }
+
+  .card.new > .card-input {
+    @apply -translate-y-40 opacity-0 h-0 mb-0;
+  }
+
+  .card.new .card-btn-add {
+    @apply w-full text-xl;
+  }
+
+  .card.new .card-btn-cancel {
+    @apply w-0 translate-x-10;
+  }
 }

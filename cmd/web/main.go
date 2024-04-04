@@ -32,7 +32,7 @@ func main() {
 	// Create template cache
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
-		log.Fatal("Cannot create template cache")
+		log.Fatal("Cannot create template cache", err)
 	}
 	app.TemplateCache = tc
 	app.UseCache = false
