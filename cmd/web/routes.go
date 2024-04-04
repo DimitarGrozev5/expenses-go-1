@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/dimitargrozev5/expenses-go-1/pkg/config"
-	"github.com/dimitargrozev5/expenses-go-1/pkg/handlers"
+	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/handlers"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )

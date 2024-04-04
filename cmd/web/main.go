@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/dimitargrozev5/expenses-go-1/pkg/config"
-	"github.com/dimitargrozev5/expenses-go-1/pkg/handlers"
-	"github.com/dimitargrozev5/expenses-go-1/pkg/render"
+	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/handlers"
+	"github.com/dimitargrozev5/expenses-go-1/internal/render"
 )
 
 const portNumber = ":8080"

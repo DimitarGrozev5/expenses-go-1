@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/dimitargrozev5/expenses-go-1/pkg/config"
-	"github.com/dimitargrozev5/expenses-go-1/pkg/models"
+	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/justinas/nosurf"
 )
 

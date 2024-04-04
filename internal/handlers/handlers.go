@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dimitargrozev5/expenses-go-1/pkg/config"
-	"github.com/dimitargrozev5/expenses-go-1/pkg/models"
-	"github.com/dimitargrozev5/expenses-go-1/pkg/render"
+	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/models"
+	"github.com/dimitargrozev5/expenses-go-1/internal/render"
 )
 
 // Repository used by the handlers
