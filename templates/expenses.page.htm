@@ -5,13 +5,18 @@
   <span class="material-symbols-outlined self-center text-4xl">add</span>
   <span class="text-xs">Add Expense</span>
 </button>
-<dialog class="dialog">
-  <form method="post" action="/expenses">
+{{$res := index .Data "newExpense"}} {{$createOpen := index .Data "createOpen"}}
+<dialog class="dialog" data-open="{{$createOpen}}">
+  <form method="post" action="/expenses" novalidate>
     <div class="dialog-title">Add Expense</div>
     <div class="dialog-content">
       <input type="hidden" name="action" value="create" />
       <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+
       <label for="amount">Amount:</label>
+      {{with (index .Form "create").Errors.Get "amount"}}
+      <label class="text-red-500">{{.}}</label>
+      {{end}}
       <input
         id="amount"
         name="amount"
@@ -19,25 +24,26 @@
         min="0"
         required
         class="input"
+        value="{{$res.Amount}}"
       />
 
       <label for="tag">Tag:</label>
-      <input id="tag" name="tag" type="text" required />
+      {{with (index .Form "create").Errors.Get "tag"}}
+      <label class="text-red-500">{{.}}</label>
+      {{end}}
+      <input id="tag" name="tag" type="text" required value="{{$res.Tag}}" />
 
       <label for="date">Date:</label>
-      <input id="date" name="date" type="datetime" required />
-
-      <label for="category">Category:</label>
-      <select id="category" name="category">
-        <option value="1">Храна</option>
-        <option value="2">Ресторанти</option>
-      </select>
-
-      <label for="account">Account:</label>
-      <select id="account" name="account">
-        <option value="1">Кеш</option>
-        <option value="2">ДСК</option>
-      </select>
+      {{with (index .Form "create").Errors.Get "date"}}
+      <label class="text-red-500">{{.}}</label>
+      {{end}}
+      <input
+        id="date"
+        name="date"
+        type="datetime"
+        required
+        value="{{$res.Date}}"
+      />
     </div>
     <div class="dialog-buttons">
       <button class="dialog-yes">Save</button>
@@ -100,18 +106,6 @@
             required
             value="2024-04-02 12:35"
           />
-
-          <label for="category">Category:</label>
-          <select id="category" name="category">
-            <option value="1">Храна</option>
-            <option value="2">Ресторанти</option>
-          </select>
-
-          <label for="account">Account:</label>
-          <select id="account" name="account">
-            <option value="1">Кеш</option>
-            <option value="2">ДСК</option>
-          </select>
         </div>
         <div class="dialog-buttons">
           <button class="dialog-yes">Save</button>

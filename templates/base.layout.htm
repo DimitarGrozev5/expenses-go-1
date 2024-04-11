@@ -59,8 +59,26 @@
         </ul>
       </nav>
     </footer>
+    <div class="alert-msg closed">
+      <p></p>
+      <button>X</button>
+    </div>
     <script src="/static/js/hm.js"></script>
     <script src="/static/js/dialog.js"></script>
+    <script src="/static/js/alert.js"></script>
+    <script>
+      {{with .Flash}}
+        flashAlert({{.}}, "flash")
+      {{end}}
+
+      {{with .Warning}}
+        flashAlert({{.}}, "warn")
+      {{end}}
+
+      {{with .Error}}
+        flashAlert({{.}}, "error")
+      {{end}}
+    </script>
   </body>
 </html>
 {{end}}

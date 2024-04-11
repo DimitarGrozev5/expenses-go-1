@@ -93,4 +93,27 @@
   .card.new .card-btn-cancel {
     @apply w-0 translate-x-10;
   }
+
+  /*
+   * Alert message
+   */
+  .alert-msg {
+    @apply translate-y-0 transition-all shadow-lg fixed inset-x-4 bottom-6 bg-green-100 border border-green-500 rounded-md text-right text-green-700 p-4 flex flex-row gap-4 items-center;
+  }
+
+  .alert-msg.warn {
+    @apply bg-yellow-50 border-yellow-500 text-yellow-700;
+  }
+
+  .alert-msg.error {
+    @apply bg-red-50 border-red-500 text-red-700;
+  }
+
+  .alert-msg.closed {
+    @apply translate-y-52;
+  }
+
+  .alert-msg > p {
+    @apply flex-1;
+  }
 }

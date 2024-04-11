@@ -8,6 +8,11 @@ window.addEventListener("load", () => {
     // Get dialog
     const dialog = toggleDialogPrompt.nextElementSibling;
 
+    // If set to open
+    if (dialog.dataset.open === "true") {
+      dialog.showModal();
+    }
+
     toggleDialogPrompt.addEventListener("click", () => {
       dialog.showModal();
     });

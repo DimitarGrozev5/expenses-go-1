@@ -19,6 +19,8 @@ var app config.AppConfig
 var session *scs.SessionManager
 
 func main() {
+	// Storing data in the session
+	// gob.Register(models.Alert{})
 
 	app.InProduction = false
 
