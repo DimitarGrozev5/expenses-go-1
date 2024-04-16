@@ -16,11 +16,26 @@ func routes(app *config.AppConfig) http.Handler {
 	mux.Use(NoSurf)
 	mux.Use(SessionLoad)
 
-	mux.Get("/", handlers.Repo.Home)
-	mux.Get("/about", handlers.Repo.About)
-	mux.Get("/expenses", handlers.Repo.Expenses)
-	mux.Post("/expenses", handlers.Repo.PostExpenses)
-	mux.Get("/static/*", handlers.Repo.Static)
+	// mux.Get("/", handlers.Repo.Home)
+	// mux.Get("/about", handlers.Repo.About)
+	// mux.Get("/expenses", handlers.Repo.Expenses)
+	// mux.Post("/expenses", handlers.Repo.PostExpenses)
+
+	// Public routes
+	mux.Group(func(r chi.Router) {
+		r.Get("/", handlers.Repo.Home)
+		r.Post("/login", handlers.Repo.Home)
+		r.Get("/static/*", handlers.Repo.Static)
+	})
+
+	// Private routes
+	mux.Group(func(r chi.Router) {
+		// r.Use(AuthMiddleware)
+		r.Get("/expenses", handlers.Repo.Home)
+		r.Post("/expenses/add", handlers.Repo.Home)
+		r.Post("/expenses/delete", handlers.Repo.Home)
+		r.Post("/expenses/edit", handlers.Repo.Home)
+	})
 
 	return mux
 }

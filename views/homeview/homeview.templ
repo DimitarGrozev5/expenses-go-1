@@ -1,0 +1,41 @@
+package homeview
+
+import "github.com/dimitargrozev5/expenses-go-1/views/layout"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/buttons"
+import "github.com/dimitargrozev5/expenses-go-1/internal/forms"
+
+// Page data
+type HomeData struct {
+	Title     string
+	CsrfToken string
+	LoginForm forms.Form
+}
+
+templ (d HomeData) View() {
+	@layout.MainLayout(d.Title) {
+		@layout.UnauthLayout(layout.UnauthHeader("Expenses")) {
+			@cards.Card() {
+				<form action="/login" method="post" class="flex flex-col items-stretch gap-3 m-0">
+					@inputs.CsrfInput(d.CsrfToken)
+					@inputs.TextInput(inputs.TextInputProps{
+						Type:     "email",
+						Name:     "email",
+						Label:    "Email",
+						Required: true,
+						Value:    d.LoginForm.Get("email"),
+						Error:    d.LoginForm.Errors.Get("email")})
+					@inputs.TextInput(inputs.TextInputProps{
+						Type:     "password",
+						Name:     "password",
+						Label:    "Password",
+						Required: true,
+						Value:    d.LoginForm.Get("password"),
+						Error:    d.LoginForm.Errors.Get("password")})
+					@buttons.PrimaryButton("Login")
+				</form>
+			}
+		}
+	}
+}

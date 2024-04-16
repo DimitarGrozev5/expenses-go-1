@@ -1,0 +1,12 @@
+<div class=\"flex flex-col items-stretch\"><label for=\"
+\">
+</label> <input name=\"
+\" id=\"
+\"
+ required
+ value=\"
+\" type=\"
+\" class=\"border border-primary-500 rounded-md p-2\"> 
+<div class=\"text-red-500\">
+</div>
+</div>

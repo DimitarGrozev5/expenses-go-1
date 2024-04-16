@@ -35,11 +35,6 @@
     @apply bg-black opacity-50;
   }
 
-  input,
-  select {
-    @apply border border-primary-500 rounded-md p-2;
-  }
-
   .card {
     @apply border border-primary-400 rounded-md p-4 bg-primary-200 transition-all duration-1000 overflow-hidden;
   }

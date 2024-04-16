@@ -1,14 +1,15 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/config"
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
+	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/internal/render"
+	"github.com/dimitargrozev5/expenses-go-1/views"
 )
 
 // Repository used by the handlers
@@ -31,12 +32,10 @@ func NewHandlers(r *Repository) {
 	Repo = r
 }
 
-func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
-	remoteIp := r.RemoteAddr
-
-	m.App.Session.Put(r.Context(), "remote_ip", remoteIp)
-
+func (m *Repository) Home1(w http.ResponseWriter, r *http.Request) {
 	render.RenderTemplate(w, r, "home.page.htm", &models.TemplateData{})
+	views.Test().Render(r.Context(), w)
+	// layout.MainLayout("").Render(r.Context(), w)
 }
 
 func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +55,8 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) PostExpenses(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		log.Println(err)
+		helpers.ServerError(w, err)
+		return
 	}
 
 	action := r.Form.Get("action")
@@ -103,14 +103,9 @@ func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
 	stringMap := make(map[string]string)
 	stringMap["test"] = "Hello, again."
 
-	remoteIp := m.App.Session.GetString(r.Context(), "remote_ip")
-	stringMap["remote_ip"] = remoteIp
-
 	render.RenderTemplate(w, r, "about.page.htm", &models.TemplateData{StringMap: stringMap})
 }
 
 func (m *Repository) Static(w http.ResponseWriter, r *http.Request) {
 	http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))).ServeHTTP(w, r)
 }
-
-// var Static = http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))

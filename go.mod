@@ -8,3 +8,7 @@ require (
 )
 
 require github.com/alexedwards/scs/v2 v2.8.0
+
+require github.com/a-h/templ v0.2.663
+
+require github.com/mattn/go-sqlite3 v1.14.22 // indirect
