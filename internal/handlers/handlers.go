@@ -5,13 +5,11 @@ import (
 	"strconv"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/config"
-	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/internal/render"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
-	"github.com/dimitargrozev5/expenses-go-1/internal/repository/dbrepo"
 	"github.com/dimitargrozev5/expenses-go-1/views"
 )
 
@@ -21,20 +19,27 @@ var Repo *Repository
 // Repository type
 type Repository struct {
 	App *config.AppConfig
-	DB  repository.DatabaseRepo
+	DB  map[string]repository.DatabaseRepo
 }
 
 // Creates a new repsoitory
-func NewRepo(a *config.AppConfig, db *driver.DB) *Repository {
+func NewRepo(a *config.AppConfig) *Repository {
 	return &Repository{
 		App: a,
-		DB:  dbrepo.NewSqliteRepo(db.SQL, a),
+		DB:  make(map[string]repository.DatabaseRepo),
 	}
 }
 
 // Sets the repository for the handlers
 func NewHandlers(r *Repository) {
 	Repo = r
+}
+
+// Close all DB connections
+func (m *Repository) CloseAllConnections() {
+	for _, dbconn := range m.DB {
+		dbconn.Close()
+	}
 }
 
 func (m *Repository) Home1(w http.ResponseWriter, r *http.Request) {
