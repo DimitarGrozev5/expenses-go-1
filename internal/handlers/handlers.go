@@ -5,10 +5,13 @@ import (
 	"strconv"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/internal/render"
+	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
+	"github.com/dimitargrozev5/expenses-go-1/internal/repository/dbrepo"
 	"github.com/dimitargrozev5/expenses-go-1/views"
 )
 
@@ -18,12 +21,14 @@ var Repo *Repository
 // Repository type
 type Repository struct {
 	App *config.AppConfig
+	DB  repository.DatabaseRepo
 }
 
 // Creates a new repsoitory
-func NewRepo(a *config.AppConfig) *Repository {
+func NewRepo(a *config.AppConfig, db *driver.DB) *Repository {
 	return &Repository{
 		App: a,
+		DB:  dbrepo.NewSqliteRepo(db.SQL, a),
 	}
 }
 

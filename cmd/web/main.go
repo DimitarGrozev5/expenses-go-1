@@ -9,6 +9,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/handlers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/render"
@@ -23,10 +24,11 @@ var infoLog *log.Logger
 var errorLog *log.Logger
 
 func main() {
-	err := run()
+	db, err := run()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.SQL.Close()
 
 	fmt.Println("Starting server on port ", portNumber)
 
@@ -41,7 +43,7 @@ func main() {
 	}
 }
 
-func run() error {
+func run() (*driver.DB, error) {
 	// gob.Register(models.NewExpense{})
 
 	app.InProduction = false
@@ -57,13 +59,22 @@ func run() error {
 	session.Cookie.Persist = true
 	session.Cookie.SameSite = http.SameSiteLaxMode
 	session.Cookie.Secure = app.InProduction
+
 	app.Session = session
+
+	// Connect to database
+	log.Println("Connecting to database...")
+	db, err := driver.ConnectSQL("./db/users.db")
+	if err != nil {
+		log.Fatal("Cannot connect to database!", err)
+	}
+	log.Println("Connected to database")
 
 	// Create template cache
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatal("Cannot create template cache")
-		return err
+		return nil, err
 	}
 	app.TemplateCache = tc
 	app.UseCache = false
@@ -73,8 +84,8 @@ func run() error {
 	helpers.NewHelpers(&app)
 
 	// Create handlers repo
-	repo := handlers.NewRepo(&app)
+	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
 
-	return nil
+	return db, nil
 }
