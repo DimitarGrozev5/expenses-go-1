@@ -31,6 +31,7 @@ func routes(_ *config.AppConfig) http.Handler {
 	// Private routes
 	mux.Group(func(r chi.Router) {
 		r.Use(IsAuth)
+		r.Get("/logout", handlers.Repo.Logout)
 		r.Get("/expenses", handlers.Repo.Expenses)
 		r.Post("/expenses/add", handlers.Repo.Home)
 		r.Post("/expenses/delete", handlers.Repo.Home)
