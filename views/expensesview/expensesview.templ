@@ -2,6 +2,7 @@ package expensesview
 
 import "github.com/dimitargrozev5/expenses-go-1/internal/models"
 import "github.com/dimitargrozev5/expenses-go-1/views/layout"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
 
 // Page data
 type ExpensesData struct {
@@ -9,9 +10,11 @@ type ExpensesData struct {
 }
 
 templ (d ExpensesData) View() {
-    @layout.MainLayout(d.TemplateData) {
-        @layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
-            expenses
-        }
-    }
+	@layout.MainLayout(d.TemplateData) {
+		@layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
+			@cards.AddCard("Add Expense", "/expenses/add", "true") {
+                add expenses
+            }
+		}
+	}
 }
