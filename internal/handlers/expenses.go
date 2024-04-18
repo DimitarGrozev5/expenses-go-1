@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -77,5 +76,22 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 	label := form.Get("label")
 	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
 
-	fmt.Println(amount, label, date)
+	expense := models.Expense{
+		Amount: amount,
+		Label:  label,
+		Date:   date,
+	}
+
+	// Add expense to database
+	err = m.DB[m.App.Session.GetString(r.Context(), "user_key")].AddExpense(expense)
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Failed to add expense")
+		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+		return
+	}
+
+	// Add success message
+	m.AddFlashMsg(r, "Expense added")
+	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
 }

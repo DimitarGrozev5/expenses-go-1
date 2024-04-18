@@ -55,6 +55,21 @@ func (m *Repository) AddDefaultData(td *models.TemplateData, r *http.Request) *m
 	return td
 }
 
+// Add flash message to session
+func (m *Repository) AddFlashMsg(r *http.Request, msg string) {
+	m.App.Session.Put(r.Context(), "flash", msg)
+}
+
+// Add warning message to session
+func (m *Repository) AddWarningMsg(r *http.Request, msg string) {
+	m.App.Session.Put(r.Context(), "warning", msg)
+}
+
+// Add error message to session
+func (m *Repository) AddErrorMsg(r *http.Request, msg string) {
+	m.App.Session.Put(r.Context(), "error", msg)
+}
+
 func (m *Repository) Home1(w http.ResponseWriter, r *http.Request) {
 	render.RenderTemplate(w, r, "home.page.htm", &models.TemplateData{})
 	views.Test().Render(r.Context(), w)

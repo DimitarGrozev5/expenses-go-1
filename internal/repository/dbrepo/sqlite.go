@@ -72,3 +72,28 @@ func (m *sqliteDBRepo) Authenticate(email, testPassword string) (int, string, er
 
 	return id, hashedPassword, nil
 }
+
+// Add expense
+func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query
+	stmt := `INSERT INTO expenses(amount, label, date) VALUES($1, $2, $3)`
+
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		expense.Amount,
+		expense.Label,
+		expense.Date,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

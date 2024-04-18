@@ -57,7 +57,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	_, err = os.Stat(dbrepo.GetUserDBPath(m.App.DBPath, uEmail))
 	if errors.Is(err, os.ErrNotExist) {
 		m.App.ErrorLog.Println(err)
-		m.App.Session.Put(r.Context(), "error", "Invalid login credentials")
+		m.AddErrorMsg(r, "Invalid login credentials")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -66,7 +66,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	dbconn, err := driver.ConnectSQL(dbrepo.GetUserDBPath(m.App.DBPath, uEmail))
 	if err != nil {
 		m.App.ErrorLog.Println(err)
-		m.App.Session.Put(r.Context(), "error", "Server error")
+		m.AddErrorMsg(r, "Server error")
 		http.Redirect(w, r, "/", http.StatusInternalServerError)
 		return
 	}
@@ -78,7 +78,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	_, _, err = repo.Authenticate(uEmail, uPassword)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
-		m.App.Session.Put(r.Context(), "error", "Invalid login credentials")
+		m.AddErrorMsg(r, "Invalid login credentials")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -93,7 +93,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	m.App.Session.Put(r.Context(), "user_key", key)
 
 	// Flash message to user
-	m.App.Session.Put(r.Context(), "flash", "Logged in successfully")
+	m.AddFlashMsg(r, "Logged in successfully")
 
 	// Redirect to home page
 	http.Redirect(w, r, "/", http.StatusSeeOther)

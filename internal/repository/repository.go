@@ -7,6 +7,10 @@ import (
 type DatabaseRepo interface {
 	Close() error
 
+	// User methods
 	GetUserByEmail(email string) (models.User, error)
 	Authenticate(email, testPassword string) (int, string, error)
+
+	// Expense methods
+	AddExpense(expense models.Expense) error
 }
