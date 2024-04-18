@@ -82,8 +82,16 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 		Date:   date,
 	}
 
+	// Get DB repo
+	repo, ok := m.GetDB(r)
+	if !ok {
+		m.App.ErrorLog.Println("Failed to get DB repo")
+		m.AddErrorMsg(r, "Log in before adding expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
 	// Add expense to database
-	err = m.DB[m.App.Session.GetString(r.Context(), "user_key")].AddExpense(expense)
+	err = repo.AddExpense(expense)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Failed to add expense")

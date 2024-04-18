@@ -36,6 +36,12 @@ func NewHandlers(r *Repository) {
 	Repo = r
 }
 
+// Get DB connection
+func (m *Repository) GetDB(r *http.Request) (repository.DatabaseRepo, bool) {
+	db, ok := m.DB[m.App.Session.GetString(r.Context(), "user_key")]
+	return db, ok
+}
+
 // Close all DB connections
 func (m *Repository) CloseAllConnections() {
 	for _, dbconn := range m.DB {
