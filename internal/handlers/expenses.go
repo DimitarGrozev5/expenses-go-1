@@ -43,6 +43,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	// Setup page data
 	data := expensesview.ExpensesData{
 		TemplateData: td,
+		Expenses:     expenses,
 	}
 
 	// Render view
