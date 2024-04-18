@@ -14,13 +14,11 @@ import "github.com/dimitargrozev5/expenses-go-1/views/layout"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/buttons"
-import "github.com/dimitargrozev5/expenses-go-1/internal/forms"
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
 
 // Page data
 type HomeData struct {
-	Title     string
-	CsrfToken string
-	LoginForm forms.Form
+	models.TemplateData
 }
 
 func (d HomeData) View() templ.Component {
@@ -58,7 +56,7 @@ func (d HomeData) View() templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = inputs.CsrfInput(d.CsrfToken).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = inputs.CsrfInput(d.CSRFToken).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -67,8 +65,8 @@ func (d HomeData) View() templ.Component {
 						Name:     "email",
 						Label:    "Email",
 						Required: true,
-						Value:    d.LoginForm.Get("email"),
-						Error:    d.LoginForm.Errors.Get("email")}).Render(ctx, templ_7745c5c3_Buffer)
+						Value:    d.Form["login"].Get("email"),
+						Error:    d.Form["login"].Errors.Get("email")}).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -77,8 +75,8 @@ func (d HomeData) View() templ.Component {
 						Name:     "password",
 						Label:    "Password",
 						Required: true,
-						Value:    d.LoginForm.Get("password"),
-						Error:    d.LoginForm.Errors.Get("password")}).Render(ctx, templ_7745c5c3_Buffer)
+						Value:    d.Form["login"].Get("password"),
+						Error:    d.Form["login"].Errors.Get("password")}).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -113,7 +111,7 @@ func (d HomeData) View() templ.Component {
 			}
 			return templ_7745c5c3_Err
 		})
-		templ_7745c5c3_Err = layout.MainLayout(d.Title).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layout.MainLayout(d.Title, d.TemplateData).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

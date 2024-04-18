@@ -12,9 +12,22 @@ type sqliteDBRepo struct {
 	DB  *sql.DB
 }
 
-func NewSqliteRepo(conn *sql.DB, a *config.AppConfig) repository.DatabaseRepo {
+func NewSqliteRepo(app *config.AppConfig, user string, conn *sql.DB) repository.DatabaseRepo {
 	return &sqliteDBRepo{
-		App: a,
+		App: app,
 		DB:  conn,
 	}
+}
+
+// Get user key
+func GetUserKey(user string) string {
+	return user
+}
+
+// Get user db path
+func GetUserDBPath(dbPath, user string) string {
+	// Get user key
+	userKey := GetUserKey(user)
+
+	return dbPath + userKey + ".db"
 }

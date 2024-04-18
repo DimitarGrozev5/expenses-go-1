@@ -1,6 +1,14 @@
 package layout
 
-templ MainLayout(title string) {
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+
+script flashMessage(flash, warn, err string) {
+	flashAlert(flash, "flash")
+	flashAlert(warn, "warn")
+	flashAlert(err, "error")
+}
+
+templ MainLayout(title string, data models.TemplateData) {
 	<html lang="en" class="h-full">
 		<head>
 			<meta charset="UTF-8"/>
@@ -18,6 +26,12 @@ templ MainLayout(title string) {
 		</head>
 		<body class="bg-primary-100 flex flex-col items-stretch h-full">
 			{ children... }
+			<div class="alert-msg closed">
+				<p></p>
+				<button>X</button>
+			</div>
+			<script src="/static/js/alert.js"></script>
+			@flashMessage(data.Flash, data.Warning, data.Error)
 		</body>
 	</html>
 }

@@ -3,10 +3,11 @@ package main
 import (
 	"net/http"
 
+	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/justinas/nosurf"
 )
 
-// NoSurf adds CSRF protection to all POST requests.
+// NoSurf adds CSRF protection to all POST requests
 func NoSurf(next http.Handler) http.Handler {
 	csrfHandler := nosurf.New(next)
 
@@ -20,7 +21,19 @@ func NoSurf(next http.Handler) http.Handler {
 	return csrfHandler
 }
 
-// SessionLoad loads and saves the session on every request.
+// SessionLoad loads and saves the session on every request
 func SessionLoad(next http.Handler) http.Handler {
 	return session.LoadAndSave(next)
+}
+
+// Auth checks if the user is authenticated
+func IsAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !helpers.IsAuthenticated(r) {
+			session.Put(r.Context(), "error", "Not logged in!")
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

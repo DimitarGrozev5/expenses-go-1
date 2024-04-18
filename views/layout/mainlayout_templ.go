@@ -10,7 +10,21 @@ import "context"
 import "io"
 import "bytes"
 
-func MainLayout(title string) templ.Component {
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+
+func flashMessage(flash, warn, err string) templ.ComponentScript {
+	return templ.ComponentScript{
+		Name: `__templ_flashMessage_13d3`,
+		Function: `function __templ_flashMessage_13d3(flash, warn, err){flashAlert(flash, "flash")
+	flashAlert(warn, "warn")
+	flashAlert(err, "error")
+}`,
+		Call:       templ.SafeScript(`__templ_flashMessage_13d3`, flash, warn, err),
+		CallInline: templ.SafeScriptInline(`__templ_flashMessage_13d3`, flash, warn, err),
+	}
+}
+
+func MainLayout(title string, data models.TemplateData) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -35,7 +49,7 @@ func MainLayout(title string) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views\layout\mainlayout.templ`, Line: 9, Col: 18}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views\layout\mainlayout.templ`, Line: 17, Col: 18}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -60,6 +74,14 @@ func MainLayout(title string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 6)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = flashMessage(data.Flash, data.Warning, data.Error).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 7)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

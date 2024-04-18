@@ -15,4 +15,5 @@ type AppConfig struct {
 	ErrorLog      *log.Logger
 	InProduction  bool
 	Session       *scs.SessionManager
+	DBPath        string
 }

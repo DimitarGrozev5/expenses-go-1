@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
-func routes(app *config.AppConfig) http.Handler {
+func routes(_ *config.AppConfig) http.Handler {
 	mux := chi.NewRouter()
 
 	mux.Use(middleware.Recoverer)
@@ -24,14 +24,14 @@ func routes(app *config.AppConfig) http.Handler {
 	// Public routes
 	mux.Group(func(r chi.Router) {
 		r.Get("/", handlers.Repo.Home)
-		r.Post("/login", handlers.Repo.Home)
+		r.Post("/login", handlers.Repo.PostLogin)
 		r.Get("/static/*", handlers.Repo.Static)
 	})
 
 	// Private routes
 	mux.Group(func(r chi.Router) {
-		// r.Use(AuthMiddleware)
-		r.Get("/expenses", handlers.Repo.Home)
+		r.Use(IsAuth)
+		r.Get("/expenses", handlers.Repo.Expenses)
 		r.Post("/expenses/add", handlers.Repo.Home)
 		r.Post("/expenses/delete", handlers.Repo.Home)
 		r.Post("/expenses/edit", handlers.Repo.Home)

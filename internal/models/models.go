@@ -11,21 +11,21 @@ type NewExpense struct {
 
 // Users
 type User struct {
-	ID        int
-	Email     string
-	Password  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID       int
+	Email    string
+	Password string
+	// CreatedAt time.Time
+	// UpdatedAt time.Time
 }
 
 // Expenses
 type Expense struct {
-	ID        int
-	Amount    float64
-	Tag       string
-	Date      time.Time
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID     int
+	Amount float64
+	Tag    string
+	Date   time.Time
+	// CreatedAt time.Time
+	// UpdatedAt time.Time
 	// CategoryID int
 	// Category   Category
 	// AccountID  int

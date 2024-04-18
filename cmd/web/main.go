@@ -45,18 +45,25 @@ func main() {
 }
 
 func run() error {
+	// res, _ := bcrypt.GenerateFromPassword([]byte("asdasd123"), bcrypt.DefaultCost)
+	// fmt.Println(string(res))
+
 	// Register models to Session
 	gob.Register(models.User{})
 	gob.Register(models.Expense{})
 
+	// Set in production
 	app.InProduction = false
 
+	// Set info log
 	infoLog = log.New(os.Stdout, "INFO:\t", log.Ldate|log.Ltime)
 	app.InfoLog = infoLog
 
+	// Set error log
 	errorLog = log.New(os.Stdout, "ERROR:\t", log.Ldate|log.Ltime|log.Lshortfile)
 	app.ErrorLog = errorLog
 
+	// Set session
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
@@ -64,6 +71,9 @@ func run() error {
 	session.Cookie.Secure = app.InProduction
 
 	app.Session = session
+
+	// Set db path
+	app.DBPath = "./db/"
 
 	// Create template cache
 	tc, err := render.CreateTemplateCache()

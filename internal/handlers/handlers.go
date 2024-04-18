@@ -11,6 +11,7 @@ import (
 	"github.com/dimitargrozev5/expenses-go-1/internal/render"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
 	"github.com/dimitargrozev5/expenses-go-1/views"
+	"github.com/justinas/nosurf"
 )
 
 // Repository used by the handlers
@@ -40,6 +41,17 @@ func (m *Repository) CloseAllConnections() {
 	for _, dbconn := range m.DB {
 		dbconn.Close()
 	}
+}
+
+// Take flash messages from session
+func (m *Repository) AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateData {
+	td.CSRFToken = nosurf.Token(r)
+	td.Flash = m.App.Session.PopString(r.Context(), "flash")
+	td.Error = m.App.Session.PopString(r.Context(), "error")
+	td.Warning = m.App.Session.PopString(r.Context(), "warning")
+	td.IsAuthenticated = helpers.IsAuthenticated(r)
+
+	return td
 }
 
 func (m *Repository) Home1(w http.ResponseWriter, r *http.Request) {

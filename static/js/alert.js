@@ -1,4 +1,14 @@
+
+/**
+ * 
+ * @param {string} text 
+ * @param {'flash' | 'warn' | 'error'} type 
+ * @returns 
+ */
 async function flashAlert(text, type) {
+  // Exit if message is empty
+  if (!text) return;
+
   // Get alert elements
   const alertMsg = document.querySelector(".alert-msg");
   const alertText = document.querySelector(".alert-msg > p");
@@ -17,16 +27,18 @@ async function flashAlert(text, type) {
       break;
 
     case "error":
-    case "warn":
       alertMsg.classList.remove("warn");
       alertMsg.classList.add("error");
       break;
 
     default:
+      alertMsg.classList.remove("warn");
+      alertMsg.classList.remove("error");
       break;
   }
 
   // Set handler functions
+  /** @type {number} */
   let timer;
   const openMsg = () => {
     alertMsg.classList.remove("closed");

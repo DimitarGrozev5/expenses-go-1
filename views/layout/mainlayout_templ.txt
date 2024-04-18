@@ -3,4 +3,5 @@
 </title>
 <title>Expenses</title>
 <link href=\"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined\" rel=\"stylesheet\"><link rel=\"stylesheet\" href=\"/static/css/style.css\"></head><body class=\"bg-primary-100 flex flex-col items-stretch h-full\">
+<div class=\"alert-msg closed\"><p></p><button>X</button></div><script src=\"/static/js/alert.js\"></script>
 </body></html>
