@@ -1,0 +1,13 @@
+package layout
+
+templ AuthLayout(header, footer templ.Component) {
+	<header class="bg-primary-600 text-primary-50 py-4 px-3 flex flex-row items-center">
+		@header
+	</header>
+	<main class="flex-1 overflow-auto flex flex-col items-stretch gap-4 px-4 py-2">
+		{ children... }
+	</main>
+	<footer class="flex flex-row items-stretch bg-primary-500">
+        @footer
+    </footer>
+}

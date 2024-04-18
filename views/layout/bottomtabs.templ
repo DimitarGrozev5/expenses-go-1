@@ -1,0 +1,31 @@
+package layout
+
+import "strings"
+
+func tabClass(path string, target string) string {
+	matches := strings.HasPrefix(path, target)
+	className := "bg-primary-600 text-primary-50 p-3 rounded-t-md"
+	if matches {
+		return className + " pb-6"
+	}
+    return className
+}
+
+templ BottomTabs(currentPath string) {
+	<nav class="flex-1 flex flex-row items-stretch">
+		<ul class="flex-1 flex flex-row items-end justify-between px-2 pt-4">
+			<li class={ tabClass(currentPath, "/expenses") }>
+				<a href="/expenses">Expenses</a>
+			</li>
+			<li class={ tabClass(currentPath, "/categories") }>
+				<a href="/categories">Categories</a>
+			</li>
+			<li class={ tabClass(currentPath, "/accounts") }>
+				<a href="/accounts">Accounts</a>
+			</li>
+			<li class={ tabClass(currentPath, "/history") }>
+				<a href="/history">History</a>
+			</li>
+		</ul>
+	</nav>
+}

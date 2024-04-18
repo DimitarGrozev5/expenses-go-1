@@ -50,6 +50,7 @@ func (m *Repository) AddDefaultData(td *models.TemplateData, r *http.Request) *m
 	td.Error = m.App.Session.PopString(r.Context(), "error")
 	td.Warning = m.App.Session.PopString(r.Context(), "warning")
 	td.IsAuthenticated = helpers.IsAuthenticated(r)
+	td.CurrentURLPath = r.URL.Path
 
 	return td
 }

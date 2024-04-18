@@ -1,0 +1,17 @@
+package expensesview
+
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+import "github.com/dimitargrozev5/expenses-go-1/views/layout"
+
+// Page data
+type ExpensesData struct {
+	models.TemplateData
+}
+
+templ (d ExpensesData) View() {
+    @layout.MainLayout(d.TemplateData) {
+        @layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
+            expenses
+        }
+    }
+}

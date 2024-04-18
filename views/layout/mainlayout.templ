@@ -8,13 +8,13 @@ script flashMessage(flash, warn, err string) {
 	flashAlert(err, "error")
 }
 
-templ MainLayout(title string, data models.TemplateData) {
+templ MainLayout(data models.TemplateData) {
 	<html lang="en" class="h-full">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			if len(title) > 0 {
-				<title>{ title }</title>
+			if len(data.Title) > 0 {
+				<title>{ data.Title }</title>
 			} else {
 				<title>Expenses</title>
 			}
@@ -23,6 +23,7 @@ templ MainLayout(title string, data models.TemplateData) {
 				rel="stylesheet"
 			/>
 			<link rel="stylesheet" href="/static/css/style.css"/>
+			<link rel="stylesheet" href="/static/css/hb.css"/>
 		</head>
 		<body class="bg-primary-100 flex flex-col items-stretch h-full">
 			{ children... }

@@ -12,7 +12,7 @@ type HomeData struct {
 }
 
 templ (d HomeData) View() {
-	@layout.MainLayout(d.Title, d.TemplateData) {
+	@layout.MainLayout(d.TemplateData) {
 		@layout.UnauthLayout(layout.UnauthHeader("Expenses")) {
 			@cards.Card() {
 				<form action="/login" method="post" class="flex flex-col items-stretch gap-3 m-0" novalidate>
