@@ -1,2 +1,0 @@
-<form action=\"/login\" method=\"post\" class=\"flex flex-col items-stretch gap-3 m-0\" novalidate>
-</form>

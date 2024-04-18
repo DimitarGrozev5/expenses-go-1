@@ -23,19 +23,29 @@ func routes(_ *config.AppConfig) http.Handler {
 
 	// Public routes
 	mux.Group(func(r chi.Router) {
+		// Handle home page
 		r.Get("/", handlers.Repo.Home)
+
+		// Handle login page
 		r.Post("/login", handlers.Repo.PostLogin)
+
+		// Serve access to static files
 		r.Get("/static/*", handlers.Repo.Static)
 	})
 
 	// Private routes
 	mux.Group(func(r chi.Router) {
+		// Set auth middleware
 		r.Use(IsAuth)
+
+		// Handle logout
 		r.Get("/logout", handlers.Repo.Logout)
+
+		// Handle expense related routes
 		r.Get("/expenses", handlers.Repo.Expenses)
 		r.Post("/expenses/add", handlers.Repo.Home)
-		r.Post("/expenses/delete", handlers.Repo.Home)
-		r.Post("/expenses/edit", handlers.Repo.Home)
+		r.Post("/expenses/{expenseId}/delete", handlers.Repo.Home)
+		r.Post("/expenses/{expenseId}/edit", handlers.Repo.Home)
 	})
 
 	return mux

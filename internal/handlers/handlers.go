@@ -60,7 +60,7 @@ func (m *Repository) Home1(w http.ResponseWriter, r *http.Request) {
 	// layout.MainLayout("").Render(r.Context(), w)
 }
 
-func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
+func (m *Repository) Expenses1(w http.ResponseWriter, r *http.Request) {
 	var emptyExpense models.NewExpense
 	data := make(map[string]interface{})
 	data["newExpense"] = emptyExpense
