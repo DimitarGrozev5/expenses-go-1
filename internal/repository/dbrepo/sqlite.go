@@ -3,6 +3,7 @@ package dbrepo
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -71,6 +72,45 @@ func (m *sqliteDBRepo) Authenticate(email, testPassword string) (int, string, er
 	}
 
 	return id, hashedPassword, nil
+}
+
+// Get expenses
+func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query
+	query := `SELECT id, amount, label, date FROM expenses`
+
+	// Get rows
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Define exenses slice
+	expenses := make([]models.Expense, 0)
+
+	// Scan rows
+	for rows.Next() {
+		var expense models.Expense
+
+		err = rows.Scan(&expense.ID, &expense.Amount, &expense.Label, &expense.Date)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Add to slice
+		expenses = append(expenses, expense)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return expenses, nil
 }
 
 // Add expense

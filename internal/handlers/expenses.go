@@ -13,6 +13,22 @@ import (
 
 func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 
+	// Get db repo
+	repo, ok := m.GetDB(r)
+	if !ok {
+		m.App.ErrorLog.Println("Cannot get DB repo")
+		m.AddErrorMsg(r, "Please login to view expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
+	// Get all expenses
+	expenses, err := repo.GetExpenses()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
 	// Get template data
 	td := models.TemplateData{
 		Title: "Expenses",

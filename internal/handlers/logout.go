@@ -14,8 +14,10 @@ func (m *Repository) Logout(w http.ResponseWriter, r *http.Request) {
 	_ = m.App.Session.RenewToken(r.Context())
 
 	// Close connection and delete from repo
-	m.DB[key].Close()
-	delete(m.DB, key)
+	if len(key) > 0 {
+		m.DB[key].Close()
+		delete(m.DB, key)
+	}
 
 	// Flash message to user
 	m.App.Session.Put(r.Context(), "flash", "Logged out successfully")

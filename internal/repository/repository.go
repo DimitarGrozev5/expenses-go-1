@@ -12,5 +12,6 @@ type DatabaseRepo interface {
 	Authenticate(email, testPassword string) (int, string, error)
 
 	// Expense methods
+	GetExpenses() ([]models.Expense, error)
 	AddExpense(expense models.Expense) error
 }
