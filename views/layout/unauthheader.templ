@@ -1,0 +1,13 @@
+package layout
+
+templ UnauthHeader(title string) {
+	if len(title) > 0 {
+		<h1 class="text-2xl flex-1 text-center">
+			{ title }
+		</h1>
+	} else {
+		<h1 class="text-2xl flex-1 text-center">
+			Expenses
+		</h1>
+	}
+}
