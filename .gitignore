@@ -1,2 +1,3 @@
 views/**/*.txt
 views/**/*.go
+db

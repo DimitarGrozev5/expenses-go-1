@@ -96,8 +96,8 @@ func (m *Repository) PostExpenses(w http.ResponseWriter, r *http.Request) {
 		form := forms.New(r.PostForm)
 
 		form.Required("amount", "tag", "date")
-		form.IsFloat64("amount", r)
-		form.MinLength("tag", 3, r)
+		form.IsFloat64("amount")
+		form.MinLength("tag", 3)
 
 		if !form.Valid() {
 			data := make(map[string]interface{})

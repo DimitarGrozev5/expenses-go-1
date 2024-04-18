@@ -22,7 +22,7 @@ type User struct {
 type Expense struct {
 	ID     int
 	Amount float64
-	Tag    string
+	Label  string
 	Date   time.Time
 	// CreatedAt time.Time
 	// UpdatedAt time.Time

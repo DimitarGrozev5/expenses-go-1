@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Valid return true if there are no errors
@@ -42,8 +43,8 @@ func (f *Form) Required(fields ...string) {
 	}
 }
 
-func (f *Form) MinLength(field string, length int, r *http.Request) bool {
-	x := r.Form.Get(field)
+func (f *Form) MinLength(field string, length int) bool {
+	x := f.Get(field)
 	if len(x) < length {
 		f.Errors.Add(field, fmt.Sprintf("This field must be at least %d characters long", length))
 		return false
@@ -51,11 +52,21 @@ func (f *Form) MinLength(field string, length int, r *http.Request) bool {
 	return true
 }
 
-func (f *Form) IsFloat64(field string, r *http.Request) bool {
-	x := r.Form.Get(field)
+func (f *Form) IsFloat64(field string) bool {
+	x := f.Get(field)
 	_, err := strconv.ParseFloat(x, 64)
 	if err != nil {
 		f.Errors.Add(field, "This field must be a number")
+		return false
+	}
+	return true
+}
+
+func (f *Form) IsDate(field string, layout string) bool {
+	x := f.Get(field)
+	_, err := time.Parse(layout, x)
+	if err != nil {
+		f.Errors.Add(field, "This field must be a datetime")
 		return false
 	}
 	return true

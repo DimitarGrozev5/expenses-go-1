@@ -3,18 +3,50 @@ package expensesview
 import "github.com/dimitargrozev5/expenses-go-1/internal/models"
 import "github.com/dimitargrozev5/expenses-go-1/views/layout"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 
 // Page data
 type ExpensesData struct {
 	models.TemplateData
 }
 
+func (d ExpensesData) dialogOpened(dialog string) bool {
+	return len(d.Form[dialog].Values) > 0
+}
+
 templ (d ExpensesData) View() {
 	@layout.MainLayout(d.TemplateData) {
 		@layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
-			@cards.AddCard("Add Expense", "/expenses/add", "true") {
-                add expenses
-            }
+			@cards.AddCard("Add Expense", "/expenses/add", d.dialogOpened("add-expense")) {
+				@inputs.CsrfInput(d.CSRFToken)
+
+				@inputs.TextInput(inputs.TextInputProps{
+					Label:    "Amount",
+					Name:     "amount",
+					Type:     "number",
+					Required: true,
+					Value:    d.Form["add-expense"].Get("amount"),
+					Error:    d.Form["add-expense"].Errors.Get("amount"),
+				})
+
+				@inputs.TextInput(inputs.TextInputProps{
+					Label:    "Label",
+					Name:     "label",
+					Type:     "text",
+					Required: true,
+					Value:    d.Form["add-expense"].Get("label"),
+					Error:    d.Form["add-expense"].Errors.Get("label"),
+				})
+
+				@inputs.TextInput(inputs.TextInputProps{
+					Label:    "Date",
+					Name:     "date",
+					Type:     "datetime-local",
+					Required: true,
+					Value:    d.Form["add-expense"].Get("date"),
+					Error:    d.Form["add-expense"].Errors.Get("date"),
+				})
+			}
 		}
 	}
 }

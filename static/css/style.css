@@ -635,12 +635,12 @@ video {
   margin: 0px;
 }
 
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
 .mb-0 {
   margin-bottom: 0px;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
 }
 
 .block {
@@ -846,10 +846,6 @@ video {
 
 .p-4 {
   padding: 1rem;
-}
-
-.p-0 {
-  padding: 0px;
 }
 
 .px-2 {
