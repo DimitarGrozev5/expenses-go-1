@@ -83,24 +83,14 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 
 	if !form.Valid() {
 
-		// Get template data
-		td := models.TemplateData{
-			Title: "Expenses",
-			Form: map[string]*forms.Form{
-				"add-expense": form,
-			},
-		}
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"add-expense": form,
+		})
 
-		// Add default data
-		m.AddDefaultData(&td, r)
+		// Redirect to expenses
+		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
 
-		// Setup page data
-		data := expensesview.ExpensesData{
-			TemplateData: td,
-		}
-
-		// Render view
-		data.View().Render(r.Context(), w)
 		return
 	}
 

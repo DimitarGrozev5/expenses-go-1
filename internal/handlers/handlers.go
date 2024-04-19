@@ -49,7 +49,7 @@ func (m *Repository) CloseAllConnections() {
 	}
 }
 
-// Take flash messages from session
+// Add default data to template
 func (m *Repository) AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateData {
 	td.CSRFToken = nosurf.Token(r)
 	td.Flash = m.App.Session.PopString(r.Context(), "flash")
@@ -57,6 +57,13 @@ func (m *Repository) AddDefaultData(td *models.TemplateData, r *http.Request) *m
 	td.Warning = m.App.Session.PopString(r.Context(), "warning")
 	td.IsAuthenticated = helpers.IsAuthenticated(r)
 	td.CurrentURLPath = r.URL.Path
+
+	if m.App.Session.Exists(r.Context(), "forms") {
+		storedForms := m.App.Session.Pop(r.Context(), "forms").(map[string]*forms.Form)
+		for formName, form := range storedForms {
+			td.Form[formName] = form
+		}
+	}
 
 	return td
 }
@@ -74,6 +81,11 @@ func (m *Repository) AddWarningMsg(r *http.Request, msg string) {
 // Add error message to session
 func (m *Repository) AddErrorMsg(r *http.Request, msg string) {
 	m.App.Session.Put(r.Context(), "error", msg)
+}
+
+// Add form to session
+func (m *Repository) AddForms(r *http.Request, forms map[string]*forms.Form) {
+	m.App.Session.Put(r.Context(), "forms", forms)
 }
 
 func (m *Repository) Home1(w http.ResponseWriter, r *http.Request) {

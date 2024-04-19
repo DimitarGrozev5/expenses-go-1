@@ -10,6 +10,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/handlers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -51,6 +52,8 @@ func run() error {
 	// Register models to Session
 	gob.Register(models.User{})
 	gob.Register(models.Expense{})
+	gob.Register(forms.Form{})
+	gob.Register(map[string]*forms.Form{})
 
 	// Set in production
 	app.InProduction = false

@@ -8,9 +8,7 @@ import (
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
-	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository/dbrepo"
-	"github.com/dimitargrozev5/expenses-go-1/views/homeview"
 )
 
 // Handle posting to login
@@ -29,24 +27,15 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	form.Required("email", "password")
 	if !form.Valid() {
 
-		// Get template data
-		td := models.TemplateData{
-			Title: "Home",
-			Form: map[string]*forms.Form{
-				"login": form,
-			},
-		}
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"login": form,
+		})
 
-		// Add default data
-		m.AddDefaultData(&td, r)
+		// Redirect to home
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 
-		// Setup page data
-		data := homeview.HomeData{
-			TemplateData: td,
-		}
-
-		// Render view
-		data.View().Render(r.Context(), w)
+		return
 	}
 
 	// Get user data
@@ -56,18 +45,48 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	// Check if user DB exists
 	_, err = os.Stat(dbrepo.GetUserDBPath(m.App.DBPath, uEmail))
 	if errors.Is(err, os.ErrNotExist) {
+
+		// Write to error log
 		m.App.ErrorLog.Println(err)
+
+		// Reset password in form
+		form.Set("password", "")
+
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"login": form,
+		})
+
+		// Add error message
 		m.AddErrorMsg(r, "Invalid login credentials")
+
+		// Redirect to home
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+
 		return
 	}
 
 	// Create user connection
 	dbconn, err := driver.ConnectSQL(dbrepo.GetUserDBPath(m.App.DBPath, uEmail))
 	if err != nil {
+
+		// Write to error log
 		m.App.ErrorLog.Println(err)
+
+		// Reset password in form
+		form.Set("password", "")
+
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"login": form,
+		})
+
+		// Add error message
 		m.AddErrorMsg(r, "Server error")
-		http.Redirect(w, r, "/", http.StatusInternalServerError)
+
+		// Redirect to home
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+
 		return
 	}
 
@@ -77,9 +96,24 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	// Authenticate user
 	_, _, err = repo.Authenticate(uEmail, uPassword)
 	if err != nil {
+
+		// Write to error log
 		m.App.ErrorLog.Println(err)
+
+		// Reset password in form
+		form.Set("password", "")
+
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"login": form,
+		})
+
+		// Add error message
 		m.AddErrorMsg(r, "Invalid login credentials")
+
+		// Redirect to home
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+
 		return
 	}
 
