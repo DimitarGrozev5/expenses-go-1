@@ -137,3 +137,56 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 
 	return nil
 }
+
+// Edit expense
+func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query
+	stmt := `UPDATE expenses SET
+				amount=$1,
+				label=$2,
+				date=$3
+			WHERE id=$4`
+
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		expense.Amount,
+		expense.Label,
+		expense.Date,
+		expense.ID,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete expense
+func (m *sqliteDBRepo) DeleteExpense(id int) error {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query
+	stmt := `DELETE FROM expenses WHERE id=$1`
+
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		id,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

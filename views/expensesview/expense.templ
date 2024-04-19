@@ -7,8 +7,8 @@ import "github.com/dimitargrozev5/expenses-go-1/internal/forms"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 
-func getAction(id int) templ.SafeURL {
-	return templ.URL(fmt.Sprintf("/expenses/%d/edit", id))
+func getAction(id int, method string) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/expenses/%d/%s", id, method))
 }
 
 func opened(form *forms.Form) bool {
@@ -27,7 +27,7 @@ templ ExpenseCard(expense models.Expense, editForm *forms.Form, csrfToken string
 				<div class="text-xs text-primary-400">{ fmt.Sprintf("%02d:%02d", expense.Date.Hour(), expense.Date.Minute()) }</div>
 				<div class="flex-1 flex flex-row gap-3 justify-end items-end">
 					<button class="toggle-dialog"><span class="material-symbols-outlined text-base">edit</span></button>
-					@dialogs.Dialog(getAction(expense.ID), opened(editForm), "Edit expense", "Edit") {
+					@dialogs.Dialog(getAction(expense.ID, "edit"), opened(editForm), "Edit expense", "Edit") {
 						@inputs.CsrfInput(csrfToken)
 						@inputs.TextInput(inputs.TextInputProps{
 							Name:     "amount",
@@ -55,6 +55,10 @@ templ ExpenseCard(expense models.Expense, editForm *forms.Form, csrfToken string
 						})
 					}
 					<button class="toggle-dialog"><span class="material-symbols-outlined text-base">delete</span></button>
+					@dialogs.Dialog(getAction(expense.ID, "delete"), false, "Delete expense", "Delete") {
+						@inputs.CsrfInput(csrfToken)
+						<div>Are you sure you want to delete the expense?</div>
+					}
 				</div>
 			</div>
 		</div>

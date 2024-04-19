@@ -44,8 +44,8 @@ func routes(_ *config.AppConfig) http.Handler {
 		// Handle expense related routes
 		r.Get("/expenses", handlers.Repo.Expenses)
 		r.Post("/expenses/add", handlers.Repo.PostNewExpense)
-		r.Post("/expenses/{expenseId}/delete", handlers.Repo.Home)
-		r.Post("/expenses/{expenseId}/edit", handlers.Repo.Home)
+		r.Post("/expenses/{expenseId}/edit", handlers.Repo.PostEditExpense)
+		r.Post("/expenses/{expenseId}/delete", handlers.Repo.PostDeleteExpense)
 	})
 
 	return mux

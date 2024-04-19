@@ -14,4 +14,6 @@ type DatabaseRepo interface {
 	// Expense methods
 	GetExpenses() ([]models.Expense, error)
 	AddExpense(expense models.Expense) error
+	EditExpense(expense models.Expense) error
+	DeleteExpense(id int) error
 }
