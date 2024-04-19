@@ -10,6 +10,7 @@ import "fmt"
 type ExpensesData struct {
 	models.TemplateData
 	Expenses []models.Expense
+	Tags     []models.Tag
 }
 
 func (d ExpensesData) dialogOpened(dialog string) bool {
@@ -29,13 +30,12 @@ templ (d ExpensesData) View() {
 					Value:    d.Form["add-expense"].Get("amount"),
 					Error:    d.Form["add-expense"].Errors.Get("amount"),
 				})
-				@inputs.TextInput(inputs.TextInputProps{
-					Label:    "Label",
-					Name:     "label",
-					Type:     "text",
+				@inputs.TagsInput(d.Tags, inputs.TagsInputProps{
+					Name:     "tags",
+					Label:    "Tags",
 					Required: true,
-					Value:    d.Form["add-expense"].Get("label"),
-					Error:    d.Form["add-expense"].Errors.Get("label"),
+					Value:    d.Form["add-expense"].Get("tags"),
+					Error:    d.Form["add-expense"].Errors.Get("tags"),
 				})
 				@inputs.TextInput(inputs.TextInputProps{
 					Label:    "Date",

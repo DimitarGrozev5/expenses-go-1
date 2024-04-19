@@ -22,12 +22,20 @@ type User struct {
 type Expense struct {
 	ID     int
 	Amount float64
-	Label  string
 	Date   time.Time
+	Tags   []Tag
 	// CreatedAt time.Time
 	// UpdatedAt time.Time
 	// CategoryID int
 	// Category   Category
 	// AccountID  int
 	// Account    Amount
+}
+
+// Tags
+type Tag struct {
+	ID         int
+	Name       string
+	UsageCount int
+	LastUsed   time.Time
 }

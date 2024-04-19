@@ -20,7 +20,11 @@ templ ExpenseCard(expense models.Expense, editForm *forms.Form, csrfToken string
 		<div class="flex flex-row items-stretch">
 			<div class="flex-1 flex flex-col items-start gap-2">
 				<div class="text-2xl">{ fmt.Sprintf("%.2f", expense.Amount) }</div>
-				<div class="px-2 py-0.5 border border-primary-500 rounded-full">{ expense.Label }</div>
+				<div class="flex flex-row items-center gap-2 flex-wrap">
+					for _, tag := range expense.Tags {
+						<div class="px-2 py-0.5 border border-primary-500 rounded-full">{ tag.Name }</div>
+					}
+				</div>
 			</div>
 			<div class="flex flex-col items-end">
 				<div class="text-xs text-primary-400">{ fmt.Sprintf("%02d.%02d.%d", expense.Date.Day(), expense.Date.Month(), expense.Date.Year()) }</div>
@@ -36,14 +40,6 @@ templ ExpenseCard(expense models.Expense, editForm *forms.Form, csrfToken string
 							Required: true,
 							Value:    editForm.Get("amount"),
 							Error:    editForm.Errors.Get("amount"),
-						})
-						@inputs.TextInput(inputs.TextInputProps{
-							Name:     "label",
-							Label:    "Label",
-							Type:     "text",
-							Required: true,
-							Value:    editForm.Get("label"),
-							Error:    editForm.Errors.Get("label"),
 						})
 						@inputs.TextInput(inputs.TextInputProps{
 							Name:     "date",

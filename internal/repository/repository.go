@@ -11,6 +11,9 @@ type DatabaseRepo interface {
 	GetUserByEmail(email string) (models.User, error)
 	Authenticate(email, testPassword string) (int, string, error)
 
+	// Tags methods
+	GetTags() ([]models.Tag, error)
+
 	// Expense methods
 	GetExpenses() ([]models.Expense, error)
 	AddExpense(expense models.Expense) error
