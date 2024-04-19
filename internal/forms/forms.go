@@ -28,6 +28,19 @@ func New(data url.Values) *Form {
 	}
 }
 
+func NewFromMap(data map[string]string) *Form {
+	d := url.Values{}
+
+	for key, value := range data {
+		d.Add(key, value)
+	}
+
+	return &Form{
+		d,
+		errors(map[string][]string{}),
+	}
+}
+
 // Has checks if form field is in post and not empty
 func (f *Form) Has(field string, r *http.Request) bool {
 	x := r.Form.Get(field)

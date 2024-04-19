@@ -1,6 +1,6 @@
 package cards
 
-import "strconv"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
 
 templ AddCard(caption string, action templ.SafeURL, opened bool) {
 	<button
@@ -9,19 +9,7 @@ templ AddCard(caption string, action templ.SafeURL, opened bool) {
 		<span class="material-symbols-outlined self-center text-4xl">add</span>
 		<span class="text-xs">{ caption }</span>
 	</button>
-	<dialog
-		class="dialog w-full p-4 rounded-lg backdrop:bg-black backdrop:opacity-50"
-		data-open={ strconv.FormatBool(opened) }
-	>
-		<form method="post" action={ action } class="w-full mb-0 rounded-lg">
-			<div class="flex flex-row items-stretch justify-center text-primary-800 font-semibold mb-4 text-lg">{ caption }</div>
-			<div class="flex flex-col items-stretch gap-1 mb-4">
-				{ children... }
-			</div>
-			<div class="flex flex-row justify-end items-center gap-3">
-				<button class="text-base px-2.5 py-1 border border-primary-400 rounded-md bg-primary-200">Create</button>
-				<button class="dialog-close text-base px-2.5 py-1" type="button" autofocus>Cancel</button>
-			</div>
-		</form>
-	</dialog>
+	@dialogs.Dialog(action, opened, caption, "Create") {
+		{ children... }
+	}
 }

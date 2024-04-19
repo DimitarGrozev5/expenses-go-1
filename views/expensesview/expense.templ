@@ -3,10 +3,21 @@ package expensesview
 import "github.com/dimitargrozev5/expenses-go-1/internal/models"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
 import "fmt"
+import "github.com/dimitargrozev5/expenses-go-1/internal/forms"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 
-templ ExpenseCard(expense models.Expense) {
+func getAction(id int) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("/expenses/%d/edit", id))
+}
+
+func opened(form *forms.Form) bool {
+	return !form.Valid()
+}
+
+templ ExpenseCard(expense models.Expense, editForm *forms.Form, csrfToken string) {
 	@cards.Card() {
-		<div class="flex flex-row items-start">
+		<div class="flex flex-row items-stretch">
 			<div class="flex-1 flex flex-col items-start gap-2">
 				<div class="text-2xl">{ fmt.Sprintf("%.2f", expense.Amount) }</div>
 				<div class="px-2 py-0.5 border border-primary-500 rounded-full">{ expense.Label }</div>
@@ -14,6 +25,37 @@ templ ExpenseCard(expense models.Expense) {
 			<div class="flex flex-col items-end">
 				<div class="text-xs text-primary-400">{ fmt.Sprintf("%02d.%02d.%d", expense.Date.Day(), expense.Date.Month(), expense.Date.Year()) }</div>
 				<div class="text-xs text-primary-400">{ fmt.Sprintf("%02d:%02d", expense.Date.Hour(), expense.Date.Minute()) }</div>
+				<div class="flex-1 flex flex-row gap-3 justify-end items-end">
+					<button class="toggle-dialog"><span class="material-symbols-outlined text-base">edit</span></button>
+					@dialogs.Dialog(getAction(expense.ID), opened(editForm), "Edit expense", "Edit") {
+						@inputs.CsrfInput(csrfToken)
+						@inputs.TextInput(inputs.TextInputProps{
+							Name:     "amount",
+							Label:    "Amount",
+							Type:     "number",
+							Required: true,
+							Value:    editForm.Get("amount"),
+							Error:    editForm.Errors.Get("amount"),
+						})
+						@inputs.TextInput(inputs.TextInputProps{
+							Name:     "label",
+							Label:    "Label",
+							Type:     "text",
+							Required: true,
+							Value:    editForm.Get("label"),
+							Error:    editForm.Errors.Get("label"),
+						})
+						@inputs.TextInput(inputs.TextInputProps{
+							Name:     "date",
+							Label:    "Date",
+							Type:     "datetime-local",
+							Required: true,
+							Value:    editForm.Get("date"),
+							Error:    editForm.Errors.Get("date"),
+						})
+					}
+					<button class="toggle-dialog"><span class="material-symbols-outlined text-base">delete</span></button>
+				</div>
 			</div>
 		</div>
 	}

@@ -1,12 +1,14 @@
 window.addEventListener("load", () => {
   // Get all toggle-dialog-prompt
-  const toggleDialogPrompts = document.querySelectorAll(
-    ".toggle-dialog"
-  );
+  const toggleDialogPrompts = document.querySelectorAll(".toggle-dialog");
 
   toggleDialogPrompts.forEach((toggleDialogPrompt) => {
     // Get dialog
     const dialog = toggleDialogPrompt.nextElementSibling;
+
+    if (!dialog || dialog.tagName.toLowerCase() !== "dialog") {
+      return;
+    }
 
     // If set to open
     if (dialog.dataset.open === "true") {

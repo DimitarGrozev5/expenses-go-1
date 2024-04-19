@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -35,6 +36,21 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		Form: map[string]*forms.Form{
 			"add-expense": forms.New(nil),
 		},
+	}
+
+	// Add forms for expenses
+	for _, expense := range expenses {
+		// Get form names
+		edit := fmt.Sprintf("edit-%d", expense.ID)
+		delete := fmt.Sprintf("delete-%d", expense.ID)
+
+		// Add forms
+		td.Form[edit] = forms.NewFromMap(map[string]string{
+			"amount": fmt.Sprintf("%0.2f", expense.Amount),
+			"label":  expense.Label,
+			"date":   fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
+		})
+		td.Form[delete] = forms.New(nil)
 	}
 
 	// Add default data

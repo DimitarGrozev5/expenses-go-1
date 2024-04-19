@@ -74,14 +74,14 @@ func (m *sqliteDBRepo) Authenticate(email, testPassword string) (int, string, er
 	return id, hashedPassword, nil
 }
 
-// Get expenses
+// Get expenses ordered by date
 func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// Define query
-	query := `SELECT id, amount, label, date FROM expenses`
+	query := `SELECT id, amount, label, date FROM expenses ORDER BY date DESC`
 
 	// Get rows
 	rows, err := m.DB.QueryContext(ctx, query)
