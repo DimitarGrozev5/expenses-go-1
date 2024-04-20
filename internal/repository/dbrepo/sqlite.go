@@ -155,7 +155,6 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 
 		// Get expense
 		oldExpense, ok := expenses[expense.ID]
-		fmt.Println(oldExpense, ok)
 		if !ok {
 			expense.Tags = append(expense.Tags, tag)
 			expenses[expense.ID] = expense

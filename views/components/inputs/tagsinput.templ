@@ -1,6 +1,7 @@
 package inputs
 
 import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+import "strings"
 
 type TagsInputProps struct {
 	Name     string
@@ -10,8 +11,16 @@ type TagsInputProps struct {
 	Error    string
 }
 
+func joinTags(tags []models.Tag) string {
+	strs := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		strs = append(strs, tag.Name)
+	}
+	return strings.Join(strs, ",")
+}
+
 templ TagsInput(tags []models.Tag, props TagsInputProps) {
-	<div class="flex flex-col items-stretch">
+	<div class="tag-input flex flex-col items-stretch border border-primary-500 rounded-md p-2" data-tags={ joinTags(tags) }>
 		<label for={ props.Name }>{ props.Label }</label>
 		<input
 			name={ props.Name }
@@ -19,16 +28,30 @@ templ TagsInput(tags []models.Tag, props TagsInputProps) {
 			required?={ props.Required }
 			value={ props.Value }
 			type="text"
-            placeholder="tag1,tag2,tag3"
-			class="border border-primary-500 rounded-md p-2"
+			class="hidden-tag-field border-primary-500 rounded-md p-2"
 		/>
 		if len(props.Error) > 0 {
 			<div class="text-red-500">{ props.Error }</div>
 		}
-		<div class="flex flex-row items-center gap-3 flex-wrap mt-2">
+		<div class="all-tags flex flex-row items-center gap-3 flex-wrap mt-2 h-20 overflow-y-auto">
 			for _, tag := range tags {
 				<div class="px-2 py-1.5 border border-primary-500 rounded-full">{ tag.Name }</div>
 			}
 		</div>
 	</div>
+	<template class="js-field-template">
+		<div class="js-field flex flex-row items-stretch gap-1">
+			<div class="selected-tags max-w-[35%] flex flex-row items-center gap-1 flex-wrap"></div>
+			<div class="flex-1 flex flex-row-items-center border border-primary-500 rounded-md overflow-hidden relative">
+				<input class="tag-input-field flex-1 p-2 pr-8" type="text"/>
+				<button type="button" class="tag-input-submit absolute inset-y-0 right-1 invisible"><span class="material-symbols-outlined">send</span></button>
+			</div>
+		</div>
+	</template>
+	<template class="tag-template">
+		<div class="px-2 py-1.5 border border-primary-500 rounded-full"></div>
+	</template>
+	<template class="selected-tag-template">
+		<div class="px-1.5 py-1 text-xs border border-primary-500 rounded-full"></div>
+	</template>
 }
