@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/internal/render"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const portNumber = ":8080"
@@ -46,7 +48,7 @@ func main() {
 }
 
 func run() error {
-	// res, _ := bcrypt.GenerateFromPassword([]byte("asdasd123"), bcrypt.DefaultCost)
+	// res, _ := bcrypt.GenerateFromPassword([]byte("asd"), bcrypt.DefaultCost)
 	// fmt.Println(string(res))
 
 	// Register models to Session
@@ -54,6 +56,10 @@ func run() error {
 	gob.Register(models.Expense{})
 	gob.Register(forms.Form{})
 	gob.Register(map[string]*forms.Form{})
+
+	// Read command line arguments
+	seed := flag.Bool("seed", false, "Create and seed new DB asd@asd.asd with password asd")
+	flag.Parse()
 
 	// Set in production
 	app.InProduction = false
@@ -94,6 +100,11 @@ func run() error {
 	// Create handlers repo
 	repo := handlers.NewRepo(&app)
 	handlers.NewHandlers(repo)
+
+	// Seed DB
+	if *seed {
+		Seed(app.DBPath)
+	}
 
 	return nil
 }

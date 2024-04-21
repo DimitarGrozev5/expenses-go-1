@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -140,28 +141,34 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 	}
 	defer rows.Close()
 
-	// Define exenses map
-	expenses := map[int]models.Expense{}
+	// Define expensesMap map and slice
+	expensesMap := map[int]*models.Expense{}
+	expensesOrder := make([]int, 0)
 
 	// Scan rows
 	for rows.Next() {
+		// Define base models
 		var expense models.Expense
 		var tag models.Tag
 
 		err = rows.Scan(&expense.ID, &expense.Amount, &expense.Date, &tag.ID, &tag.Name, &tag.UsageCount)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		// Get expense
-		oldExpense, ok := expenses[expense.ID]
+		oldExpense, ok := expensesMap[expense.ID]
+
+		// If expense hasn't been added
 		if !ok {
-			expense.Tags = append(expense.Tags, tag)
-			expenses[expense.ID] = expense
+			expense.Tags = []models.Tag{tag}
+			expensesMap[expense.ID] = &expense
+			expensesOrder = append(expensesOrder, expense.ID)
 			continue
 		}
+
+		// If expense has been added
 		oldExpense.Tags = append(oldExpense.Tags, tag)
-		expenses[expense.ID] = oldExpense
 	}
 	err = rows.Err()
 	if err != nil {
@@ -169,12 +176,12 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 	}
 
 	// Get expenses slice
-	expensesSlice := []models.Expense{}
-	for _, expense := range expenses {
-		expensesSlice = append(expensesSlice, expense)
+	expenses := make([]models.Expense, 0, len(expensesOrder))
+	for _, id := range expensesOrder {
+		expenses = append(expenses, *expensesMap[id])
 	}
 
-	return expensesSlice, nil
+	return expenses, nil
 }
 
 // Add expense
@@ -196,7 +203,7 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 
 	// Divide tags in to old and new
 	newTagsData := make([]models.Tag, 0, len(expense.Tags)*2/3)
-	oldTagsData := make([]models.Tag, 0, len(expense.Tags))
+	exisitingTags := make([]models.Tag, 0, len(expense.Tags))
 
 	// Go through tags
 	for _, tag := range expense.Tags {
@@ -205,37 +212,65 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 		if tag.ID == -1 {
 			newTagsData = append(newTagsData, tag)
 		} else {
-			oldTagsData = append(oldTagsData, tag)
+			exisitingTags = append(exisitingTags, tag)
 		}
 	}
 
-	// Insert new tags
-	// Define base query
-	baseInsertStmt := `INSERT INTO tags(name, usage_count, last_used) VALUES ($1, $2, $3)`
+	// If there are new tags, add them to DB
+	if len(newTagsData) > 0 {
+		// Store VALUES template
+		tagValuesTmpl := make([]string, 0, len(newTagsData))
 
-	// Loop trough new tags and insert them
-	for _, tag := range newTagsData {
+		// Store values
+		tagValues := make([]interface{}, 0, len(newTagsData)*3)
 
-		// Insert tag
-		result, err := tx.ExecContext(
+		// Loop trough new tags
+		for i, tag := range newTagsData {
+
+			// Define template
+			tmpl := fmt.Sprintf("($%d)", i+1)
+
+			// Add to templates
+			tagValuesTmpl = append(tagValuesTmpl, tmpl)
+
+			// Add tp values
+			tagValues = append(tagValues, tag.Name)
+		}
+
+		// Define query
+		stmt := `INSERT INTO tags(name) VALUES `
+
+		// Append templates
+		stmt = fmt.Sprintf("%s%s RETURNING id, name, usage_count", stmt, strings.Join(tagValuesTmpl, ","))
+
+		// Insert tags
+		rows, err := tx.QueryContext(
 			ctx,
-			baseInsertStmt,
-			tag.Name,
-			1,
-			time.Now(),
+			stmt,
+			tagValues...,
 		)
 		if err != nil {
 			return err
 		}
+		defer rows.Close()
 
-		// Get new tag id
-		id, err := result.LastInsertId()
+		// Scan rows
+		for rows.Next() {
+			// Define base model
+			var tag models.Tag
+
+			err = rows.Scan(&tag.ID, &tag.Name, &tag.UsageCount)
+			if err != nil {
+				return err
+			}
+
+			// Add tag to existing tags
+			exisitingTags = append(exisitingTags, tag)
+		}
+		err = rows.Err()
 		if err != nil {
 			return err
 		}
-
-		// Append new tag to old tags
-		oldTagsData = append(oldTagsData, models.Tag{ID: int(id)})
 	}
 
 	// Define query to insert expense
@@ -258,23 +293,39 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 		return err
 	}
 
-	// Define query to insert expense tags
-	stmt = `INSERT INTO expense_tags(expense_id, tag_id) VALUES($1, $2)`
+	// Store VALUES template
+	tagValuesTmpl := make([]string, 0, len(exisitingTags))
 
-	// Loop through old tags
-	for _, tag := range oldTagsData {
+	// Store values
+	tagValues := make([]interface{}, 0, len(exisitingTags)*2)
 
-		// Execute query
-		_, err = tx.ExecContext(
-			ctx,
-			stmt,
-			expenseId,
-			tag.ID,
-		)
+	// Loop trough new tags
+	for i, tag := range exisitingTags {
 
-		if err != nil {
-			return err
-		}
+		// Define template
+		tmpl := fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
+
+		// Add to templates
+		tagValuesTmpl = append(tagValuesTmpl, tmpl)
+
+		// Add tp values
+		tagValues = append(tagValues, int(expenseId), tag.ID)
+	}
+
+	// Define query to insert relations
+	stmt = `INSERT INTO expense_tags(expense_id, tag_id) VALUES `
+
+	// Append templates
+	stmt = fmt.Sprintf("%s%s", stmt, strings.Join(tagValuesTmpl, ","))
+
+	// Insert relations
+	_, err = tx.ExecContext(
+		ctx,
+		stmt,
+		tagValues...,
+	)
+	if err != nil {
+		return err
 	}
 
 	tx.Commit()
@@ -316,22 +367,22 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 // Delete expense
 func (m *sqliteDBRepo) DeleteExpense(id int) error {
 	// Define context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	// defer cancel()
 
-	// Define query
-	stmt := `DELETE FROM expenses WHERE id=$1`
+	// // Define query
+	// stmt := `DELETE FROM expenses WHERE id=$1`
 
-	// Execute query
-	_, err := m.DB.ExecContext(
-		ctx,
-		stmt,
-		id,
-	)
+	// // Execute query
+	// _, err := m.DB.ExecContext(
+	// 	ctx,
+	// 	stmt,
+	// 	id,
+	// )
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
