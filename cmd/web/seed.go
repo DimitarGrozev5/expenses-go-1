@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"golang.org/x/crypto/bcrypt"
@@ -13,8 +15,14 @@ func Seed(DBPath string) {
 	// Delete old DB
 	os.Remove(DBPath + "asd@asd.asd.db")
 
+	_, err := os.OpenFile(DBPath+"asd@asd.asd.db", os.O_RDONLY, os.ModeType)
+	if err == nil {
+		log.Printf("DB not deleted!!!!!!!!!!!")
+		return
+	}
+
 	// Create db
-	db, err := sql.Open("sqlite3", app.DBPath+"asd@asd.asd.db")
+	db, err := sql.Open("sqlite3", fmt.Sprintf("%s%s.db?_fk=%s", DBPath, "asd@asd.asd", url.QueryEscape("true")))
 	if err != nil {
 		log.Fatal(err)
 	}
