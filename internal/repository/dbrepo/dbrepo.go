@@ -2,6 +2,8 @@ package dbrepo
 
 import (
 	"database/sql"
+	"fmt"
+	"net/url"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/config"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
@@ -29,5 +31,5 @@ func GetUserDBPath(dbPath, user string) string {
 	// Get user key
 	userKey := GetUserKey(user)
 
-	return dbPath + userKey + ".db"
+	return fmt.Sprintf("%s%s.db?_fk=%s", dbPath, userKey, url.QueryEscape("true"))
 }

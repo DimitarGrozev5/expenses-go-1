@@ -365,22 +365,22 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 // Delete expense
 func (m *sqliteDBRepo) DeleteExpense(id int) error {
 	// Define context with timeout
-	// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-	// // Define query
-	// stmt := `DELETE FROM expenses WHERE id=$1`
+	// Define query
+	stmt := `DELETE FROM expenses WHERE id=$1`
 
-	// // Execute query
-	// _, err := m.DB.ExecContext(
-	// 	ctx,
-	// 	stmt,
-	// 	id,
-	// )
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		id,
+	)
 
-	// if err != nil {
-	// 	return err
-	// }
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
