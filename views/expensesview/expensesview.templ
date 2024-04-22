@@ -13,14 +13,10 @@ type ExpensesData struct {
 	Tags     []models.Tag
 }
 
-func (d ExpensesData) dialogOpened(dialog string) bool {
-	return len(d.Form[dialog].Values) > 0
-}
-
 templ (d ExpensesData) View() {
 	@layout.MainLayout(d.TemplateData) {
 		@layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
-			@cards.AddCard("Add Expense", "/expenses/add", d.dialogOpened("add-expense")) {
+			@cards.AddCard("Add Expense", "/expenses/add", d.DialogOpened("add-expense")) {
 				@inputs.CsrfInput(d.CSRFToken)
 				@inputs.TextInput(inputs.TextInputProps{
 					Label:    "Amount",

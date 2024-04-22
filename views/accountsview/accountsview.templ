@@ -1,0 +1,38 @@
+package accountsview
+
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+import "github.com/dimitargrozev5/expenses-go-1/views/layout"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
+
+// Page data
+type AccountsData struct {
+	models.TemplateData
+	Account []models.Account
+}
+
+templ (d AccountsData) View() {
+	@layout.MainLayout(d.TemplateData) {
+		@layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
+			@cards.AddCard("Add New Account", "/accounts/add", d.DialogOpened("add-account")) {
+				@inputs.CsrfInput(d.CSRFToken)
+				@inputs.TextInput(inputs.TextInputProps{
+					Label:    "Name",
+					Name:     "name",
+					Type:     "string",
+					Required: true,
+					Value:    d.Form["add-account"].Get("name"),
+					Error:    d.Form["add-account"].Errors.Get("name"),
+				})
+				@inputs.TextInput(inputs.TextInputProps{
+					Label:    "Current Amount",
+					Name:     "initial_amount",
+					Type:     "number",
+					Required: true,
+					Value:    d.Form["add-account"].Get("initial_amount"),
+					Error:    d.Form["add-account"].Errors.Get("initial_amount"),
+				})
+			}
+		}
+	}
+}

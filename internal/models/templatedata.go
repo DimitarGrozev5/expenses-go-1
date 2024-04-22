@@ -31,3 +31,8 @@ type TemplateData struct {
 	// Page url path
 	CurrentURLPath string
 }
+
+// Check if dialog should be opened in templ dialog elements
+func (d TemplateData) DialogOpened(dialog string) bool {
+	return len(d.Form[dialog].Values) > 0
+}

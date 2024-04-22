@@ -25,7 +25,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
-	// Get all accounts
+	// Get accounts count
 	accountsCount, err := repo.GetAccountsCount()
 	if err != nil {
 		m.App.ErrorLog.Println(err)
