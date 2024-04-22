@@ -11,9 +11,10 @@ type NewExpense struct {
 
 // Users
 type User struct {
-	ID       int
-	Email    string
-	Password string
+	ID        int
+	Email     string
+	Password  string
+	DBVersion int
 	// CreatedAt time.Time
 	// UpdatedAt time.Time
 }

@@ -94,7 +94,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	repo := dbrepo.NewSqliteRepo(m.App, uEmail, dbconn.SQL)
 
 	// Authenticate user
-	_, _, err = repo.Authenticate(uEmail, uPassword)
+	_, _, dbVersion, err := repo.Authenticate(uEmail, uPassword)
 	if err != nil {
 
 		// Write to error log
@@ -125,6 +125,9 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Store user key in session
 	m.App.Session.Put(r.Context(), "user_key", key)
+
+	// Store dbVersion in session
+	m.App.Session.Put(r.Context(), "db_version", dbVersion)
 
 	// Flash message to user
 	m.AddFlashMsg(r, "Logged in successfully")

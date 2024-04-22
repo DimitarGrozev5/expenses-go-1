@@ -9,7 +9,7 @@ type DatabaseRepo interface {
 
 	// User methods
 	GetUserByEmail(email string) (models.User, error)
-	Authenticate(email, testPassword string) (int, string, error)
+	Authenticate(email, testPassword string) (int, string, int, error)
 
 	// Tags methods
 	GetTags() ([]models.Tag, error)

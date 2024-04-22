@@ -25,6 +25,7 @@ func Seed(DBPath string) {
 					id			INTEGER					NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 					email		TEXT		UNIQUE		NOT NULL,
 					password	TEXT					NOT NULL,
+					db_version	INTEGER
 					created_at	DATETIME				NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 					updated_at	DATETIME				NOT NULL	DEFAULT CURRENT_TIMESTAMP
 				)`
@@ -37,13 +38,13 @@ func Seed(DBPath string) {
 	}
 
 	// Insert in user table
-	stmt = `INSERT INTO user (email, password) VALUES ($1, $2)`
+	stmt = `INSERT INTO user (email, password, db_version) VALUES ($1, $2, $3)`
 
 	// Get password
 	password, _ := bcrypt.GenerateFromPassword([]byte("asd"), bcrypt.DefaultCost)
 
 	// Execute query
-	_, err = db.Exec(stmt, "asd@asd.asd", password)
+	_, err = db.Exec(stmt, "asd@asd.asd", password, 0)
 	if err != nil {
 		log.Printf("%q: %s\n", err, stmt)
 		return
