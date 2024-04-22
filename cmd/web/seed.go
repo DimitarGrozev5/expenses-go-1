@@ -31,9 +31,11 @@ func Seed(DBPath string) {
 	// Create user table
 	stmt := `CREATE TABLE user (
 					id			INTEGER					NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+
 					email		TEXT		UNIQUE		NOT NULL,
 					password	TEXT					NOT NULL,
 					db_version	INTEGER
+
 					created_at	DATETIME				NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 					updated_at	DATETIME				NOT NULL	DEFAULT CURRENT_TIMESTAMP
 				)`
@@ -61,8 +63,12 @@ func Seed(DBPath string) {
 	// Create table expenses
 	stmt = `CREATE TABLE expenses (
 		id			INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+
 		amount		NUMERIC		NOT NULL,
 		date		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
+
+		for_expense	INTEGER		NOT NULL	REFERENCES expenses (id)
+												ON DELETE RESTRICT,
 		created_at	DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at	DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
 	)`
@@ -77,9 +83,11 @@ func Seed(DBPath string) {
 	// Create table tags
 	stmt = `CREATE TABLE tags (
 		id			INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+
 		name		TEXT		NOT NULL	UNIQUE,
 		usage_count	INTEGER		NOT NULL					DEFAULT 0,
 		last_used	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
+
 		created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
 		updated_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP
 	)`
@@ -94,12 +102,14 @@ func Seed(DBPath string) {
 	// Create table expense tags
 	stmt = `CREATE TABLE expense_tags (
 		id			INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+
 		expense_id	INTEGER		NOT NULL	REFERENCES expenses (id)
 												ON DELETE CASCADE
 												ON UPDATE CASCADE,
 		tag_id		INTEGER		NOT NULL	REFERENCES tags (id)
 												ON DELETE CASCADE
 												ON UPDATE CASCADE,
+
 		created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
 		updated_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP
 	)`
@@ -149,6 +159,24 @@ func Seed(DBPath string) {
 						updated_at = datetime('now')
 					WHERE tags.id = old.tag_id;
 				END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return
+	}
+
+	// Define Category table
+	stmt = `CREATE TABLE accounts (
+		id				INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+		
+		name			TEXT		NOT NULL,
+		initial_amount	NUMERIC		NOT NULL,
+		
+		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
+		updated_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
+	)`
 
 	// Execute query
 	_, err = db.Exec(stmt)
