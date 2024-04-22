@@ -46,6 +46,9 @@ func routes(_ *config.AppConfig) http.Handler {
 		r.Post("/expenses/add", handlers.Repo.PostNewExpense)
 		r.Post("/expenses/{expenseId}/edit", handlers.Repo.PostEditExpense)
 		r.Post("/expenses/{expenseId}/delete", handlers.Repo.PostDeleteExpense)
+
+		// Handle accounts related routes
+		r.Get("/accounts", handlers.Repo.Home1)
 	})
 
 	return mux

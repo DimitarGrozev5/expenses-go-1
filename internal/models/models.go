@@ -21,12 +21,13 @@ type User struct {
 
 // Expenses
 type Expense struct {
-	ID        int
-	Amount    float64
-	Date      time.Time
-	Tags      []Tag
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          int
+	Amount      float64
+	Date        time.Time
+	Tags        []Tag
+	FromAccount Account
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 	// CategoryID int
 	// Category   Category
 	// AccountID  int
@@ -41,4 +42,13 @@ type Tag struct {
 	LastUsed   time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+// Accounts
+type Account struct {
+	ID            int
+	Name          string
+	InitialAmount float64
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }

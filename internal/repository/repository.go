@@ -22,4 +22,12 @@ type DatabaseRepo interface {
 	AddExpense(expense models.Expense) error
 	EditExpense(expense models.Expense) error
 	DeleteExpense(id int) error
+
+	// Account methods
+	GetAccountsCount() (int, error)
+	GetAccounts() ([]models.Account, error)
+	AddAccount(account models.Account) error
+	EditAccount(account models.Account) error
+	DeleteAccount(id int) error
+	TransferFunds(fromAccount, toAccount models.Account, amount float64) error
 }

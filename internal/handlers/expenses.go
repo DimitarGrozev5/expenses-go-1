@@ -25,6 +25,22 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
+	// Get all accounts
+	accountsCount, err := repo.GetAccountsCount()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
+	}
+
+	// If there are not accounts redirect to accounts page and prompt user to create an account
+	if accountsCount == 0 {
+		m.AddWarningMsg(r, "You have to create a Payment Account before you can add Expenses")
+		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		return
+	}
+
 	// Get all expenses
 	expenses, err := repo.GetExpenses()
 	if err != nil {

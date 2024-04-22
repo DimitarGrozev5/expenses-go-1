@@ -91,6 +91,7 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 		return err
 	}
 
+	// Update tags
 	exisitingTags, err := m.UpdateTags(expense.Tags, tx)
 	if err != nil {
 		return err
