@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"database/sql"
+
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 )
 
@@ -13,6 +15,7 @@ type DatabaseRepo interface {
 
 	// Tags methods
 	GetTags() ([]models.Tag, error)
+	UpdateTags(tags []models.Tag, etx *sql.Tx) ([]models.Tag, error)
 
 	// Expense methods
 	GetExpenses() ([]models.Expense, error)

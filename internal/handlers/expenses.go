@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
@@ -54,11 +55,17 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		edit := fmt.Sprintf("edit-%d", expense.ID)
 		delete := fmt.Sprintf("delete-%d", expense.ID)
 
+		// Get expense tags as []string
+		tags := make([]string, 0, len(expense.Tags))
+		for _, tag := range expense.Tags {
+			tags = append(tags, tag.Name)
+		}
+
 		// Add forms
 		td.Form[edit] = forms.NewFromMap(map[string]string{
 			"amount": fmt.Sprintf("%0.2f", expense.Amount),
-			// "label":  expense.Label,
-			"date": fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
+			"tags":   strings.Join(tags, ","),
+			"date":   fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
 		})
 		td.Form[delete] = forms.New(nil)
 	}
@@ -196,9 +203,9 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get form and validate fields
 	form := forms.New(r.PostForm)
-	form.Required("amount", "label", "date")
+	form.Required("amount", "tags", "date")
 	form.IsFloat64("amount")
-	form.MinLength("label", 3)
+	form.MinLength("tags", 3)
 	form.IsDate("date", "2006-01-02T15:04")
 
 	if !form.Valid() {
@@ -216,22 +223,60 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get data
 	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
-	// label := form.Get("label")
 	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
+
+	// Get tags
+	re := regexp.MustCompile(`,\s*`)
+
+	// Get db repo
+	repo, ok := m.GetDB(r)
+	if !ok {
+		m.App.ErrorLog.Println("Cannot get DB repo")
+		m.AddErrorMsg(r, "Please login to view expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
+	// Get all tags
+	allTags, err := repo.GetTags()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting data")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
+	// Split tags field
+	split := re.Split(form.Get("tags"), -1)
+
+	// Get tags
+	tags := make([]models.Tag, 0, len(split))
+	for _, tagName := range split {
+
+		// If tag is in all tags
+		tagSet := false
+		for _, tag := range allTags {
+			if tag.Name == tagName {
+				tags = append(tags, tag)
+				tagSet = true
+				break
+			}
+		}
+
+		// If tag is not in all tags
+		if !tagSet {
+			tags = append(tags, models.Tag{
+				ID:         -1,
+				Name:       tagName,
+				UsageCount: 1,
+				LastUsed:   time.Now(),
+			})
+		}
+	}
 
 	expense := models.Expense{
 		ID:     int(id),
 		Amount: amount,
-		// Label:  label,
-		Date: date,
-	}
-
-	// Get DB repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Failed to get DB repo")
-		m.AddErrorMsg(r, "Log in before editing expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		Tags:   tags,
+		Date:   date,
 	}
 
 	// Add expense to database

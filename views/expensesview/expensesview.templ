@@ -47,7 +47,7 @@ templ (d ExpensesData) View() {
 				})
 			}
 			for _, expense := range d.Expenses {
-				@ExpenseCard(expense, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken)
+				@ExpenseCard(expense, d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken)
 			}
 		}
 	}

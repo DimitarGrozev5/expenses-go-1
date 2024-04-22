@@ -15,7 +15,7 @@ func opened(form *forms.Form) bool {
 	return !form.Valid()
 }
 
-templ ExpenseCard(expense models.Expense, editForm *forms.Form, csrfToken string) {
+templ ExpenseCard(expense models.Expense, tags []models.Tag, editForm *forms.Form, csrfToken string) {
 	@cards.Card() {
 		<div class="flex flex-row items-stretch">
 			<div class="flex-1 flex flex-col items-start gap-2">
@@ -40,6 +40,13 @@ templ ExpenseCard(expense models.Expense, editForm *forms.Form, csrfToken string
 							Required: true,
 							Value:    editForm.Get("amount"),
 							Error:    editForm.Errors.Get("amount"),
+						})
+						@inputs.TagsInput(tags, inputs.TagsInputProps{
+							Name:     "tags",
+							Label:    "Tags",
+							Required: true,
+							Value:   editForm.Get("tags"),
+							Error:   editForm.Errors.Get("tags"),
 						})
 						@inputs.TextInput(inputs.TextInputProps{
 							Name:     "date",
