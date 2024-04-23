@@ -1,0 +1,10 @@
+package accountsview
+
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
+
+templ AccountCard(account models.Account) {
+	@cards.Card() {
+		<div>{ account.Name }</div>
+	}
+}

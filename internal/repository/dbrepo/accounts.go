@@ -72,6 +72,24 @@ func (m *sqliteDBRepo) GetAccounts() ([]models.Account, error) {
 }
 
 func (m *sqliteDBRepo) AddAccount(account models.Account) error {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query to insert account
+	stmt := `INSERT INTO accounts(name, initial_amount) VALUES($1, $2)`
+
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		account.Name,
+		account.InitialAmount,
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

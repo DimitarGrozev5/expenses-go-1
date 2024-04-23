@@ -49,6 +49,7 @@ func routes(_ *config.AppConfig) http.Handler {
 
 		// Handle accounts related routes
 		r.Get("/accounts", handlers.Repo.Accounts)
+		r.Post("/accounts/add", handlers.Repo.PostNewAccount)
 	})
 
 	return mux

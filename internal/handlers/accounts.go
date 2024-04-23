@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -60,9 +62,68 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 	// Setup page data
 	data := accountsview.AccountsData{
 		TemplateData: td,
-		Account:      accounts,
+		Accounts:     accounts,
 	}
 
 	// Render view
 	data.View().Render(r.Context(), w)
+}
+
+func (m *Repository) PostNewAccount(w http.ResponseWriter, r *http.Request) {
+
+	// Parse form
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Get db repo
+	repo, ok := m.GetDB(r)
+	if !ok {
+		m.App.ErrorLog.Println("Cannot get DB repo")
+		m.AddErrorMsg(r, "Please login to view expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
+	// Get form and validate fields
+	form := forms.New(r.PostForm)
+	form.Required("name", "initial_amount")
+	form.IsFloat64("initial_amount")
+	form.MinLength("name", 3)
+
+	if !form.Valid() {
+
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"add-account": form,
+		})
+
+		// Redirect to expenses
+		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+
+		return
+	}
+
+	// Get data
+	initialAmount, _ := strconv.ParseFloat(form.Get("initial_amount"), 64)
+	name := form.Get("name")
+
+	// Get Account object
+	account := models.Account{
+		Name:          name,
+		InitialAmount: initialAmount,
+	}
+
+	// Add expense to database
+	err = repo.AddAccount(account)
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Failed to add account")
+		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		return
+	}
+
+	// Add success message
+	m.AddFlashMsg(r, "Account added")
+	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
 }

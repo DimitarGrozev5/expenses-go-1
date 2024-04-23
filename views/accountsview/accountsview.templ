@@ -8,7 +8,7 @@ import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 // Page data
 type AccountsData struct {
 	models.TemplateData
-	Account []models.Account
+	Accounts []models.Account
 }
 
 templ (d AccountsData) View() {
@@ -32,6 +32,9 @@ templ (d AccountsData) View() {
 					Value:    d.Form["add-account"].Get("initial_amount"),
 					Error:    d.Form["add-account"].Errors.Get("initial_amount"),
 				})
+			}
+			for _, account := range d.Accounts {
+				@AccountCard(account/* , d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken */)
 			}
 		}
 	}
