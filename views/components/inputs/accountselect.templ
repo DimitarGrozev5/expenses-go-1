@@ -1,0 +1,28 @@
+package inputs
+
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+
+type AccountSelectProps struct {
+	Name     string
+	Label    string
+	Required bool
+	Value    string
+	Error    string
+}
+
+templ AccountSelect(accounts []models.Account, props AccountSelectProps) {
+	<div class="flex flex-col items-stretch">
+		<label for={ props.Name }>{ props.Label }</label>
+		<input
+			name={ props.Name }
+			id={ props.Name }
+			required?={ props.Required }
+			value={ props.Value }
+			type="text"
+			class="border border-primary-500 rounded-md p-2"
+		/>
+		if len(props.Error) > 0 {
+			<div class="text-red-500">{ props.Error }</div>
+		}
+	</div>
+}

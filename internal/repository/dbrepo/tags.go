@@ -67,6 +67,7 @@ func (m *sqliteDBRepo) UpdateTags(tags []models.Tag, etx *sql.Tx) ([]models.Tag,
 		if err != nil {
 			return nil, err
 		}
+		defer tx.Rollback()
 	}
 
 	// There must be tags

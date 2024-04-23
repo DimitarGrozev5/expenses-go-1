@@ -79,9 +79,10 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 
 		// Add forms
 		td.Form[edit] = forms.NewFromMap(map[string]string{
-			"amount": fmt.Sprintf("%0.2f", expense.Amount),
-			"tags":   strings.Join(tags, ","),
-			"date":   fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
+			"amount":       fmt.Sprintf("%0.2f", expense.Amount),
+			"tags":         strings.Join(tags, ","),
+			"date":         fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
+			"from_account": fmt.Sprintf("%d", expense.FromAccount.ID),
 		})
 		td.Form[delete] = forms.New(nil)
 	}
@@ -110,7 +111,7 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get form and validate fields
 	form := forms.New(r.PostForm)
-	form.Required("amount", "tags", "date")
+	form.Required("amount", "tags", "from_account", "date")
 	form.IsFloat64("amount")
 	form.MinLength("tags", 3)
 	form.IsDate("date", "2006-01-02T15:04")
@@ -130,6 +131,7 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get data
 	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
+	fromExpense, _ := strconv.ParseInt(form.Get("from_account"), 2, 64)
 	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
 
 	// Get tags
@@ -180,9 +182,10 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expense := models.Expense{
-		Amount: amount,
-		Tags:   tags,
-		Date:   date,
+		Amount:      amount,
+		Tags:        tags,
+		Date:        date,
+		FromAccount: models.Account{ID: int(fromExpense)},
 	}
 
 	// Add expense to database
@@ -219,7 +222,7 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get form and validate fields
 	form := forms.New(r.PostForm)
-	form.Required("amount", "tags", "date")
+	form.Required("amount", "tags", "from_account", "date")
 	form.IsFloat64("amount")
 	form.MinLength("tags", 3)
 	form.IsDate("date", "2006-01-02T15:04")
@@ -228,7 +231,7 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 		// Push form to session
 		m.AddForms(r, map[string]*forms.Form{
-			"add-expense": form,
+			fmt.Sprintf("edit-%d", id): form,
 		})
 
 		// Redirect to expenses
@@ -239,6 +242,7 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get data
 	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
+	fromExpense, _ := strconv.ParseInt(form.Get("from_account"), 2, 64)
 	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
 
 	// Get tags
@@ -289,10 +293,11 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expense := models.Expense{
-		ID:     int(id),
-		Amount: amount,
-		Tags:   tags,
-		Date:   date,
+		ID:          int(id),
+		Amount:      amount,
+		Tags:        tags,
+		Date:        date,
+		FromAccount: models.Account{ID: int(fromExpense)},
 	}
 
 	// Add expense to database

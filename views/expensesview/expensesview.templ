@@ -11,6 +11,7 @@ type ExpensesData struct {
 	models.TemplateData
 	Expenses []models.Expense
 	Tags     []models.Tag
+	Accounts []models.Account
 }
 
 templ (d ExpensesData) View() {
@@ -26,13 +27,6 @@ templ (d ExpensesData) View() {
 					Value:    d.Form["add-expense"].Get("amount"),
 					Error:    d.Form["add-expense"].Errors.Get("amount"),
 				})
-				@inputs.TagsInput(d.Tags, inputs.TagsInputProps{
-					Name:     "tags",
-					Label:    "Tags",
-					Required: true,
-					Value:    d.Form["add-expense"].Get("tags"),
-					Error:    d.Form["add-expense"].Errors.Get("tags"),
-				})
 				@inputs.TextInput(inputs.TextInputProps{
 					Label:    "Date",
 					Name:     "date",
@@ -41,9 +35,23 @@ templ (d ExpensesData) View() {
 					Value:    d.Form["add-expense"].Get("date"),
 					Error:    d.Form["add-expense"].Errors.Get("date"),
 				})
+				@inputs.TagsInput(d.Tags, inputs.TagsInputProps{
+					Name:     "tags",
+					Label:    "Tags",
+					Required: true,
+					Value:    d.Form["add-expense"].Get("tags"),
+					Error:    d.Form["add-expense"].Errors.Get("tags"),
+				})
+				@inputs.AccountSelect(d.Accounts, inputs.AccountSelectProps{
+					Label:    "From Account",
+					Name:     "from_account",
+					Required: true,
+					Value:    d.Form["add-expense"].Get("from_account"),
+					Error:    d.Form["add-expense"].Errors.Get("from_account"),
+				})
 			}
 			for _, expense := range d.Expenses {
-				@ExpenseCard(expense, d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken)
+				@ExpenseCard(expense, d.Tags, d.Accounts, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken)
 			}
 		}
 	}

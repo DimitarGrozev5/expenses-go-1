@@ -15,10 +15,15 @@ func opened(form *forms.Form) bool {
 	return !form.Valid()
 }
 
-templ ExpenseCard(expense models.Expense, tags []models.Tag, editForm *forms.Form, csrfToken string) {
+templ ExpenseCard(expense models.Expense, tags []models.Tag, accounts []models.Account, editForm *forms.Form, csrfToken string) {
 	@cards.Card() {
-		<div class="flex flex-row items-stretch">
-			<div class="flex-1 flex flex-col items-start gap-2">
+		<div class="flex flex-row items-stretch gap-4 flex-wrap">
+			<div class="flex-1 flex flex-col items-center justify-center gap-0.5">
+				<div class="text-sm text-primary-400">{ expense.FromAccount.Name }</div>
+				<div class="border-t border-t-primary-400 self-stretch mx-1"></div>
+				<div class="text-sm text-primary-400">{ expense.FromAccount.Name }</div>
+			</div>
+			<div class="flex-[3] flex flex-col items-start gap-2 min-w-[50%]">
 				<div class="text-2xl">{ fmt.Sprintf("%.2f", expense.Amount) }</div>
 				<div class="flex flex-row items-center gap-2 flex-wrap">
 					for _, tag := range expense.Tags {
@@ -41,13 +46,6 @@ templ ExpenseCard(expense models.Expense, tags []models.Tag, editForm *forms.For
 							Value:    editForm.Get("amount"),
 							Error:    editForm.Errors.Get("amount"),
 						})
-						@inputs.TagsInput(tags, inputs.TagsInputProps{
-							Name:     "tags",
-							Label:    "Tags",
-							Required: true,
-							Value:   editForm.Get("tags"),
-							Error:   editForm.Errors.Get("tags"),
-						})
 						@inputs.TextInput(inputs.TextInputProps{
 							Name:     "date",
 							Label:    "Date",
@@ -55,6 +53,20 @@ templ ExpenseCard(expense models.Expense, tags []models.Tag, editForm *forms.For
 							Required: true,
 							Value:    editForm.Get("date"),
 							Error:    editForm.Errors.Get("date"),
+						})
+						@inputs.TagsInput(tags, inputs.TagsInputProps{
+							Name:     "tags",
+							Label:    "Tags",
+							Required: true,
+							Value:    editForm.Get("tags"),
+							Error:    editForm.Errors.Get("tags"),
+						})
+						@inputs.AccountSelect(accounts, inputs.AccountSelectProps{
+							Label:    "From Account",
+							Name:     "from_account",
+							Required: true,
+							Value:    editForm.Get("from_account"),
+							Error:    editForm.Errors.Get("from_account"),
 						})
 					}
 					<button class="toggle-dialog"><span class="material-symbols-outlined text-base">delete</span></button>

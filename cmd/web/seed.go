@@ -67,7 +67,7 @@ func Seed(DBPath string) {
 		amount			NUMERIC		NOT NULL,
 		date			DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 
-		from_account	INTEGER		NOT NULL	REFERENCES expenses (id)
+		from_account	INTEGER		NOT NULL	REFERENCES accounts (id)
 													ON DELETE RESTRICT,
 		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP

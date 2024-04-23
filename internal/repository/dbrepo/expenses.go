@@ -23,10 +23,13 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 						expenses.date,
 						tags.id as tag_id,
 						tags.name as tag_name,
-						tags.usage_count
+						tags.usage_count,
+						accounts.id as account_id,
+						accounts.name as account_name
 				FROM expenses
 				JOIN expense_tags	ON (expenses.id = expense_tags.expense_id)
 				JOIN tags			ON (expense_tags.tag_id = tags.id)
+				JOIN accounts		ON (expenses.from_account = accounts.id)
 				ORDER BY expenses.date DESC, tags.usage_count DESC;`
 
 	// Get rows
@@ -45,8 +48,9 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 		// Define base models
 		var expense models.Expense
 		var tag models.Tag
+		var account models.Account
 
-		err = rows.Scan(&expense.ID, &expense.Amount, &expense.Date, &tag.ID, &tag.Name, &tag.UsageCount)
+		err = rows.Scan(&expense.ID, &expense.Amount, &expense.Date, &tag.ID, &tag.Name, &tag.UsageCount, &account.ID, &account.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -57,6 +61,7 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 		// If expense hasn't been added
 		if !ok {
 			expense.Tags = []models.Tag{tag}
+			expense.FromAccount = account
 			expensesMap[expense.ID] = &expense
 			expensesOrder = append(expensesOrder, expense.ID)
 			continue
@@ -64,6 +69,7 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 
 		// If expense has been added
 		oldExpense.Tags = append(oldExpense.Tags, tag)
+		oldExpense.FromAccount = account
 	}
 	err = rows.Err()
 	if err != nil {
@@ -90,6 +96,7 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 	if err != nil {
 		return err
 	}
+	// defer tx.Rollback()
 
 	// Update tags
 	exisitingTags, err := m.UpdateTags(expense.Tags, tx)
@@ -98,7 +105,7 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 	}
 
 	// Define query to insert expense
-	stmt := `INSERT INTO expenses(amount, date) VALUES($1, $2)`
+	stmt := `INSERT INTO expenses(amount, date, from_account) VALUES($1, $2, $3)`
 
 	// Execute query
 	result, err := tx.ExecContext(
@@ -106,6 +113,7 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 		stmt,
 		expense.Amount,
 		expense.Date,
+		expense.FromAccount.ID,
 	)
 	if err != nil {
 		return err
@@ -139,6 +147,7 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	// Create query to remove all expense tags
 	stmt := `DELETE FROM expense_tags WHERE expense_id = $1`
@@ -163,8 +172,9 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 	stmt = `UPDATE expenses SET
 				amount = $1,
 				date = $2,
-				updated_at = $3
-			WHERE id = $4`
+				from_account = $3,
+				updated_at = $4
+			WHERE id = $5`
 
 	// Update expense
 	_, err = tx.ExecContext(
@@ -172,6 +182,7 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 		stmt,
 		expense.Amount,
 		expense.Date,
+		expense.FromAccount.ID,
 		time.Now(),
 		expense.ID,
 	)
@@ -229,6 +240,7 @@ func (m *sqliteDBRepo) AddExpenseTags(expenseId int, tags []models.Tag, etx *sql
 		if err != nil {
 			return err
 		}
+		defer tx.Rollback()
 	}
 
 	// Store VALUES template
