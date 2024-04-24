@@ -48,17 +48,17 @@ async function flashAlert(text, type) {
     timer = setTimeout(() => {
       closeMsg();
 
-      alertClose.removeEventListener("click", closeMsg);
+      alertMsg.removeEventListener("click", closeMsg);
     }, 3000);
   };
   const closeMsg = () => {
     clearTimeout(timer);
     alertMsg.classList.add("closed");
-    alertClose.removeEventListener("click", closeMsg);
+    alertMsg.removeEventListener("click", closeMsg);
   };
 
   // Set button handler
-  alertClose.addEventListener("click", closeMsg);
+  alertMsg.addEventListener("click", closeMsg);
 
   alertText.innerText = text;
   openMsg();
