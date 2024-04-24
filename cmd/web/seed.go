@@ -173,10 +173,69 @@ func Seed(DBPath string) {
 		
 		name			TEXT		NOT NULL,
 		initial_amount	NUMERIC		NOT NULL,
+		current_amount	NUMERIC		NOT NULL,
+
+		usage_count		INTEGER		NOT NULL	DEFAULT 0,
 
 		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
 	)`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return
+	}
+
+	// Update accounts data when expenses change
+	stmt = `	CREATE TRIGGER account_current_amount_add
+					AFTER INSERT
+					ON expenses
+				BEGIN
+					UPDATE accounts SET
+						current_amount = current_amount - new.amount,
+						usage_count = usage_count + 1
+					WHERE accounts.id = new.from_account;
+				END;
+				
+				CREATE TRIGGER account_current_amount_remove
+					AFTER DELETE
+					ON expenses
+				BEGIN
+					UPDATE accounts SET
+						current_amount = current_amount + old.amount,
+						usage_count = usage_count - 1
+					WHERE accounts.id = old.from_account;
+				END;
+				
+				CREATE TRIGGER account_current_amount_update_amount
+					AFTER UPDATE
+					ON expenses
+					WHEN
+						old.amount <> new.amount AND
+						old.from_account = new.from_account
+				BEGIN
+					UPDATE accounts SET
+						current_amount = current_amount + old.amount - new.amount
+					WHERE accounts.id = new.from_account;
+				END;
+				
+				CREATE TRIGGER account_current_amount_update_account
+					AFTER UPDATE
+					ON expenses
+					WHEN old.from_account <> new.from_account
+				BEGIN
+					UPDATE accounts SET
+						current_amount = current_amount + old.amount,
+						usage_count = usage_count - 1
+					WHERE accounts.id = old.from_account;
+					
+					UPDATE accounts SET
+						current_amount = current_amount - new.amount,
+						usage_count = usage_count + 1
+					WHERE accounts.id = new.from_account;
+				END;`
 
 	// Execute query
 	_, err = db.Exec(stmt)

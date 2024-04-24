@@ -26,7 +26,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get accounts count
-	accountsCount, err := repo.GetAccountsCount()
+	accounts, err := repo.GetAccounts(true)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting expenses")
@@ -35,7 +35,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If there are not accounts redirect to accounts page and prompt user to create an account
-	if accountsCount == 0 {
+	if len(accounts) == 0 {
 		m.AddWarningMsg(r, "You have to create a Payment Account before you can add Expenses")
 		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
 		return
@@ -95,6 +95,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		TemplateData: td,
 		Expenses:     expenses,
 		Tags:         tags,
+		Accounts:     accounts,
 	}
 
 	// Render view
@@ -131,7 +132,7 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get data
 	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
-	fromExpense, _ := strconv.ParseInt(form.Get("from_account"), 2, 64)
+	fromExpense, _ := strconv.ParseInt(form.Get("from_account"), 10, 64)
 	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
 
 	// Get tags
@@ -213,7 +214,7 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get expense id from route param
 	idParam := chi.URLParam(r, "expenseId")
-	id, err := strconv.ParseInt(idParam, 0, 32)
+	id, err := strconv.ParseInt(idParam, 10, 32)
 	if idParam == "" || err != nil {
 		m.AddErrorMsg(r, "Invalid expense")
 		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
@@ -242,7 +243,7 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get data
 	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
-	fromExpense, _ := strconv.ParseInt(form.Get("from_account"), 2, 64)
+	fromExpense, _ := strconv.ParseInt(form.Get("from_account"), 10, 64)
 	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
 
 	// Get tags
@@ -325,7 +326,7 @@ func (m *Repository) PostDeleteExpense(w http.ResponseWriter, r *http.Request) {
 
 	// Get expense id from route param
 	idParam := chi.URLParam(r, "expenseId")
-	id, err := strconv.ParseInt(idParam, 0, 32)
+	id, err := strconv.ParseInt(idParam, 10, 32)
 	if idParam == "" || err != nil {
 		m.AddErrorMsg(r, "Invalid expense")
 		http.Redirect(w, r, "/expenses", http.StatusSeeOther)

@@ -20,7 +20,7 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get all accounts
-	accounts, err := repo.GetAccounts()
+	accounts, err := repo.GetAccounts(false)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting accounts")

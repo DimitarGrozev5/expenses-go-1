@@ -1,6 +1,7 @@
 package inputs
 
 import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+import "fmt"
 
 type AccountSelectProps struct {
 	Name     string
@@ -13,14 +14,22 @@ type AccountSelectProps struct {
 templ AccountSelect(accounts []models.Account, props AccountSelectProps) {
 	<div class="flex flex-col items-stretch">
 		<label for={ props.Name }>{ props.Label }</label>
-		<input
+		<select
 			name={ props.Name }
 			id={ props.Name }
 			required?={ props.Required }
-			value={ props.Value }
-			type="text"
 			class="border border-primary-500 rounded-md p-2"
-		/>
+		>
+			<option value="">--Please choose an option--</option>
+			for _, account := range accounts {
+				<option
+					selected?={ props.Value == fmt.Sprintf("%d", account.ID) }
+					value={ fmt.Sprintf("%d", account.ID) }
+				>
+					{ account.Name }: { fmt.Sprintf("%0.2f", account.CurrentAmount) }
+				</option>
+			}
+		</select>
 		if len(props.Error) > 0 {
 			<div class="text-red-500">{ props.Error }</div>
 		}

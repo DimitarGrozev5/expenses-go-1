@@ -2,6 +2,7 @@ package dbrepo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -32,13 +33,18 @@ func (m *sqliteDBRepo) GetAccountsCount() (int, error) {
 	return count, nil
 }
 
-func (m *sqliteDBRepo) GetAccounts() ([]models.Account, error) {
+func (m *sqliteDBRepo) GetAccounts(orderByPopularity bool) ([]models.Account, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// Define query
-	query := `SELECT id, name FROM accounts`
+	query := `SELECT id, name, current_amount FROM accounts`
+
+	// Order by option
+	if orderByPopularity {
+		query = fmt.Sprintf("%s ORDER BY usage_count DESC", query)
+	}
 
 	// Get rows
 	rows, err := m.DB.QueryContext(ctx, query)
@@ -55,7 +61,7 @@ func (m *sqliteDBRepo) GetAccounts() ([]models.Account, error) {
 		// Define base models
 		var account models.Account
 
-		err = rows.Scan(&account.ID, &account.Name)
+		err = rows.Scan(&account.ID, &account.Name, &account.CurrentAmount)
 		if err != nil {
 			return nil, err
 		}
@@ -68,6 +74,8 @@ func (m *sqliteDBRepo) GetAccounts() ([]models.Account, error) {
 		return nil, err
 	}
 
+	fmt.Println(accounts)
+
 	return accounts, nil
 }
 
@@ -77,13 +85,14 @@ func (m *sqliteDBRepo) AddAccount(account models.Account) error {
 	defer cancel()
 
 	// Define query to insert account
-	stmt := `INSERT INTO accounts(name, initial_amount) VALUES($1, $2)`
+	stmt := `INSERT INTO accounts(name, initial_amount, current_amount) VALUES($1, $2, $3)`
 
 	// Execute query
 	_, err := m.DB.ExecContext(
 		ctx,
 		stmt,
 		account.Name,
+		account.InitialAmount,
 		account.InitialAmount,
 	)
 	if err != nil {

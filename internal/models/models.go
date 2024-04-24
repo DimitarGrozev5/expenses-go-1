@@ -49,6 +49,7 @@ type Account struct {
 	ID            int
 	Name          string
 	InitialAmount float64
+	CurrentAmount float64
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
