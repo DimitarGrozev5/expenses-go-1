@@ -75,6 +75,16 @@ func (f *Form) IsFloat64(field string) bool {
 	return true
 }
 
+func (f *Form) IsInt(field string) bool {
+	x := f.Get(field)
+	_, err := strconv.ParseInt(x, 10, 64)
+	if err != nil {
+		f.Errors.Add(field, "This field must be a number")
+		return false
+	}
+	return true
+}
+
 func (f *Form) IsDate(field string, layout string) bool {
 	x := f.Get(field)
 	_, err := time.Parse(layout, x)

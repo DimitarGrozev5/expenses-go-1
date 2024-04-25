@@ -341,7 +341,7 @@ func (m *Repository) PostDeleteExpense(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
-	// Add expense to database
+	// Delete expense from database
 	err = repo.DeleteExpense(int(id))
 	if err != nil {
 		m.App.ErrorLog.Println(err)

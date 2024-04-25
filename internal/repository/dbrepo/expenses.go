@@ -96,7 +96,7 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 	if err != nil {
 		return err
 	}
-	// defer tx.Rollback()
+	defer tx.Rollback()
 
 	// Update tags
 	exisitingTags, err := m.UpdateTags(expense.Tags, tx)

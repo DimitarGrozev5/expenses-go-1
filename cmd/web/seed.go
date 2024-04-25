@@ -196,7 +196,8 @@ func Seed(DBPath string) {
 				BEGIN
 					UPDATE accounts SET
 						current_amount = current_amount - new.amount,
-						usage_count = usage_count + 1
+						usage_count = usage_count + 1,
+						updated_at = datetime('now')
 					WHERE accounts.id = new.from_account;
 				END;
 				
@@ -206,7 +207,8 @@ func Seed(DBPath string) {
 				BEGIN
 					UPDATE accounts SET
 						current_amount = current_amount + old.amount,
-						usage_count = usage_count - 1
+						usage_count = usage_count - 1,
+						updated_at = datetime('now')
 					WHERE accounts.id = old.from_account;
 				END;
 				
@@ -218,7 +220,8 @@ func Seed(DBPath string) {
 						old.from_account = new.from_account
 				BEGIN
 					UPDATE accounts SET
-						current_amount = current_amount + old.amount - new.amount
+						current_amount = current_amount + old.amount - new.amount,
+						updated_at = datetime('now')
 					WHERE accounts.id = new.from_account;
 				END;
 				
@@ -234,7 +237,8 @@ func Seed(DBPath string) {
 					
 					UPDATE accounts SET
 						current_amount = current_amount - new.amount,
-						usage_count = usage_count + 1
+						usage_count = usage_count + 1,
+						updated_at = datetime('now')
 					WHERE accounts.id = new.from_account;
 				END;
 
@@ -243,7 +247,8 @@ func Seed(DBPath string) {
 					ON accounts
 				BEGIN
 					UPDATE accounts SET
-						table_order = (SELECT COUNT(*) FROM accounts)
+						table_order = (SELECT COUNT(*) FROM accounts),
+						updated_at = datetime('now')
 					WHERE accounts.table_order = -1;
 				END;
 
@@ -258,6 +263,26 @@ func Seed(DBPath string) {
 							WHEN new.table_order > (SELECT COUNT(*) from accounts) THEN
 								RAISE (ABORT, 'Cant move the last account down')
 						END;
+				END;
+
+				CREATE TRIGGER accounts_block_delete
+					BEFORE DELETE
+					ON accounts
+				BEGIN
+					SELECT
+						CASE
+							WHEN old.usage_count > 0 THEN
+								RAISE (ABORT, 'Cant delete account that is being used')
+						END;
+				END;
+
+				CREATE TRIGGER accounts_update_order_after_delete
+					AFTER DELETE
+					ON accounts
+				BEGIN
+					UPDATE accounts SET
+						table_order = table_order - 1
+					WHERE accounts.table_order > old.table_order;
 				END;
 	`
 

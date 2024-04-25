@@ -30,4 +30,5 @@ type DatabaseRepo interface {
 	EditAccount(account models.Account) error
 	DeleteAccount(id int) error
 	TransferFunds(fromAccount, toAccount models.Account, amount float64) error
+	ReorderAccount(currentAccount models.Account, direction int) error
 }

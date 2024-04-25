@@ -50,6 +50,8 @@ type Account struct {
 	Name          string
 	InitialAmount float64
 	CurrentAmount float64
+	UsageCount    int
+	TableOrder    int
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }

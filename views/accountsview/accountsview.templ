@@ -34,7 +34,7 @@ templ (d AccountsData) View() {
 				})
 			}
 			for index, account := range d.Accounts {
-				@AccountCard(account, index == 0, index == len(d.Accounts)-1 /* , d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken */)
+				@AccountCard(account, index == 0, index == len(d.Accounts)-1, d.CSRFToken /* , d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)] */)
 			}
 		}
 	}
