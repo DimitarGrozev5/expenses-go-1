@@ -167,13 +167,14 @@ func Seed(DBPath string) {
 		return
 	}
 
+	// TODO: make default values of inital_amount 0; It's 100 for dev purposes
 	// Define Category table
 	stmt = `CREATE TABLE accounts (
 		id				INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 		
 		name			TEXT		NOT NULL,
-		initial_amount	NUMERIC		NOT NULL	DEFAULT 0	CHECK (initial_amount >= 0),
-		current_amount	NUMERIC		NOT NULL	DEFAULT 0	CHECK (current_amount >= 0),
+		initial_amount	NUMERIC		NOT NULL	DEFAULT 100	CHECK (initial_amount >= 0),
+		current_amount	NUMERIC		NOT NULL	DEFAULT 100	CHECK (current_amount >= 0),
 
 		usage_count		INTEGER		NOT NULL	DEFAULT 0,
 		table_order		INTEGER		NOT NULL	DEFAULT -1,
