@@ -24,14 +24,6 @@ templ (d AccountsData) View() {
 					Value:    d.Form["add-account"].Get("name"),
 					Error:    d.Form["add-account"].Errors.Get("name"),
 				})
-				@inputs.TextInput(inputs.TextInputProps{
-					Label:    "Current Amount",
-					Name:     "initial_amount",
-					Type:     "number",
-					Required: true,
-					Value:    d.Form["add-account"].Get("initial_amount"),
-					Error:    d.Form["add-account"].Errors.Get("initial_amount"),
-				})
 			}
 			for index, account := range d.Accounts {
 				@AccountCard(account, index == 0, index == len(d.Accounts)-1, d.CSRFToken /* , d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)] */)

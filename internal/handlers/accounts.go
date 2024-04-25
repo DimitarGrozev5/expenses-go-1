@@ -85,9 +85,8 @@ func (m *Repository) PostNewAccount(w http.ResponseWriter, r *http.Request) {
 
 	// Get form and validate fields
 	form := forms.New(r.PostForm)
-	form.Required("name", "initial_amount")
-	form.IsFloat64("initial_amount")
-	form.MinLength("name", 3)
+	form.Required("name")
+	form.MinLength("name", 4)
 
 	if !form.Valid() {
 
@@ -103,13 +102,11 @@ func (m *Repository) PostNewAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get data
-	initialAmount, _ := strconv.ParseFloat(form.Get("initial_amount"), 64)
 	name := form.Get("name")
 
 	// Get Account object
 	account := models.Account{
-		Name:          name,
-		InitialAmount: initialAmount,
+		Name: name,
 	}
 
 	// Add expense to database

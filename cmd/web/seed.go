@@ -172,8 +172,8 @@ func Seed(DBPath string) {
 		id				INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 		
 		name			TEXT		NOT NULL,
-		initial_amount	NUMERIC		NOT NULL,
-		current_amount	NUMERIC		NOT NULL,
+		initial_amount	NUMERIC		NOT NULL	DEFAULT 0	CHECK (initial_amount >= 0),
+		current_amount	NUMERIC		NOT NULL	DEFAULT 0	CHECK (current_amount >= 0),
 
 		usage_count		INTEGER		NOT NULL	DEFAULT 0,
 		table_order		INTEGER		NOT NULL	DEFAULT -1,
@@ -191,7 +191,7 @@ func Seed(DBPath string) {
 
 	// Update accounts data when expenses change
 	stmt = `	CREATE TRIGGER account_current_amount_add
-					AFTER INSERT
+					BEFORE INSERT
 					ON expenses
 				BEGIN
 					UPDATE accounts SET
@@ -202,7 +202,7 @@ func Seed(DBPath string) {
 				END;
 				
 				CREATE TRIGGER account_current_amount_remove
-					AFTER DELETE
+					BEFORE DELETE
 					ON expenses
 				BEGIN
 					UPDATE accounts SET
@@ -213,7 +213,7 @@ func Seed(DBPath string) {
 				END;
 				
 				CREATE TRIGGER account_current_amount_update_amount
-					AFTER UPDATE
+					BEFORE UPDATE
 					ON expenses
 					WHEN
 						old.amount <> new.amount AND
@@ -226,7 +226,7 @@ func Seed(DBPath string) {
 				END;
 				
 				CREATE TRIGGER account_current_amount_update_account
-					AFTER UPDATE
+					BEFORE UPDATE
 					ON expenses
 					WHEN old.from_account <> new.from_account
 				BEGIN

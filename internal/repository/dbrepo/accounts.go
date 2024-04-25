@@ -116,15 +116,13 @@ func (m *sqliteDBRepo) AddAccount(account models.Account) error {
 	defer cancel()
 
 	// Define query to insert account
-	stmt := `INSERT INTO accounts(name, initial_amount, current_amount) VALUES($1, $2, $3)`
+	stmt := `INSERT INTO accounts(name) VALUES($1)`
 
 	// Execute query
 	_, err := m.DB.ExecContext(
 		ctx,
 		stmt,
 		account.Name,
-		account.InitialAmount,
-		account.InitialAmount,
 	)
 	if err != nil {
 		return err
