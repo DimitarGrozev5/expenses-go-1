@@ -3,9 +3,26 @@ package accountsview
 import "github.com/dimitargrozev5/expenses-go-1/internal/models"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
 import "fmt"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/buttons"
 
-templ AccountCard(account models.Account) {
+templ AccountCard(account models.Account, first, last bool) {
 	@cards.Card() {
-		<div>{ account.Name }{ fmt.Sprintf("%d", account.ID) }</div>
+		<div class="flex flex-row items-center gap-4">
+			<div class="flex flex-col items-center justify-center self-stretch gap-1 -ml-2 -my-2">
+				if !first {
+					<form action={ templ.SafeURL(fmt.Sprintf("/accounts/%d/move-up", account.ID)) } method="post">
+						@buttons.IconButton("move_up", "")
+					</form>
+				}
+				if !last {
+					<form action={ templ.SafeURL(fmt.Sprintf("/accounts/%d/move-down", account.ID)) } method="post">
+						@buttons.IconButton("move_down", "")
+					</form>
+				}
+			</div>
+			<div class="text-2xl text-primary-600 flex-[2]">{ account.Name }</div>
+			<div class="text-xl text-primary-600 flex-[1]">{ fmt.Sprintf("%.2f", account.CurrentAmount) }</div>
+		</div>
+		<div class="flex flex-row items-center justify-between gap-3"></div>
 	}
 }

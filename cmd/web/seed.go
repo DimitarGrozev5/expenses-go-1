@@ -176,6 +176,7 @@ func Seed(DBPath string) {
 		current_amount	NUMERIC		NOT NULL,
 
 		usage_count		INTEGER		NOT NULL	DEFAULT 0,
+		table_order		INTEGER		NOT NULL	DEFAULT -1,
 
 		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
@@ -235,7 +236,30 @@ func Seed(DBPath string) {
 						current_amount = current_amount - new.amount,
 						usage_count = usage_count + 1
 					WHERE accounts.id = new.from_account;
-				END;`
+				END;
+
+				CREATE TRIGGER accounts_set_order_for_new_accounts
+					AFTER INSERT
+					ON accounts
+				BEGIN
+					UPDATE accounts SET
+						table_order = (SELECT COUNT(*) FROM accounts)
+					WHERE accounts.table_order = -1;
+				END;
+
+				CREATE TRIGGER accounts_update_account_order
+					BEFORE UPDATE
+					ON accounts
+				BEGIN
+					SELECT
+						CASE
+							WHEN new.table_order < 1 THEN
+								RAISE (ABORT, 'Cant move the first account up')
+							WHEN new.table_order > (SELECT COUNT(*) from accounts) THEN
+								RAISE (ABORT, 'Cant move the last account down')
+						END;
+				END;
+	`
 
 	// Execute query
 	_, err = db.Exec(stmt)

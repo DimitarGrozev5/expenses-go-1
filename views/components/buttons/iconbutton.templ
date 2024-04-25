@@ -1,0 +1,10 @@
+package buttons
+
+templ IconButton(icon string, text string) {
+	<button class="toggle-dialog flex flex-col items-center gap-0.5 text-primary-500">
+		<span class="material-symbols-outlined text-base">{ icon }</span>
+		if len(text) > 0 {
+			<span class="text-xs">{ text }</span>
+		}
+	</button>
+}

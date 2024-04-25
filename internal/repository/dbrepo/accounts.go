@@ -44,6 +44,8 @@ func (m *sqliteDBRepo) GetAccounts(orderByPopularity bool) ([]models.Account, er
 	// Order by option
 	if orderByPopularity {
 		query = fmt.Sprintf("%s ORDER BY usage_count DESC", query)
+	} else {
+		query = fmt.Sprintf("%s ORDER BY table_order DESC", query)
 	}
 
 	// Get rows
@@ -73,8 +75,6 @@ func (m *sqliteDBRepo) GetAccounts(orderByPopularity bool) ([]models.Account, er
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(accounts)
 
 	return accounts, nil
 }

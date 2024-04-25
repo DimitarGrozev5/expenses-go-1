@@ -25,4 +25,8 @@
   .alert-msg > p {
     @apply flex-1;
   }
+
+  form {
+    margin-bottom: 0;
+  }
 }
