@@ -656,12 +656,9 @@ form {
   margin: 0px;
 }
 
-.-m-2 {
-  margin: -0.5rem;
-}
-
-.-m-3 {
-  margin: -0.75rem;
+.-my-2 {
+  margin-top: -0.5rem;
+  margin-bottom: -0.5rem;
 }
 
 .mx-1 {
@@ -669,14 +666,8 @@ form {
   margin-right: 0.25rem;
 }
 
-.-my-2 {
-  margin-top: -0.5rem;
-  margin-bottom: -0.5rem;
-}
-
-.-my-2\.5 {
-  margin-top: -0.625rem;
-  margin-bottom: -0.625rem;
+.-ml-2 {
+  margin-left: -0.5rem;
 }
 
 .mb-0 {
@@ -689,22 +680,6 @@ form {
 
 .mt-2 {
   margin-top: 0.5rem;
-}
-
-.-ml-2 {
-  margin-left: -0.5rem;
-}
-
-.-ml-4 {
-  margin-left: -1rem;
-}
-
-.-ml-5 {
-  margin-left: -1.25rem;
-}
-
-.-ml-3 {
-  margin-left: -0.75rem;
 }
 
 .block {
@@ -792,10 +767,6 @@ form {
   align-items: stretch;
 }
 
-.justify-start {
-  justify-content: flex-start;
-}
-
 .justify-end {
   justify-content: flex-end;
 }
@@ -830,10 +801,6 @@ form {
 
 .gap-4 {
   gap: 1rem;
-}
-
-.gap-5 {
-  gap: 1.25rem;
 }
 
 .self-center {
@@ -1143,11 +1110,6 @@ form {
 .text-red-500 {
   --tw-text-opacity: 1;
   color: rgb(239 68 68 / var(--tw-text-opacity));
-}
-
-.text-primary-300 {
-  --tw-text-opacity: 1;
-  color: rgb(212 212 216 / var(--tw-text-opacity));
 }
 
 .shadow-lg {

@@ -14,3 +14,9 @@ require github.com/a-h/templ v0.2.663
 require github.com/mattn/go-sqlite3 v1.14.22
 
 require golang.org/x/crypto v0.22.0
+
+require (
+	github.com/otiai10/copy v1.14.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
+)
