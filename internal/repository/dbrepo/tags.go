@@ -18,7 +18,7 @@ func (m *sqliteDBRepo) GetTags() ([]models.Tag, error) {
 	defer cancel()
 
 	// Define query
-	query := `SELECT id, name, usage_count, last_used FROM tags ORDER BY usage_count DESC;`
+	query := `SELECT id, name, usage_count FROM tags ORDER BY usage_count DESC;`
 
 	// Execute query
 	rows, err := m.DB.QueryContext(ctx, query)
@@ -34,7 +34,7 @@ func (m *sqliteDBRepo) GetTags() ([]models.Tag, error) {
 	for rows.Next() {
 		var tag models.Tag
 
-		err = rows.Scan(&tag.ID, &tag.Name, &tag.UsageCount, &tag.LastUsed)
+		err = rows.Scan(&tag.ID, &tag.Name, &tag.UsageCount)
 		if err != nil {
 			log.Fatal(err)
 		}

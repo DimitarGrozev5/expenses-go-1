@@ -16,8 +16,11 @@ func Seed(DBPath string) {
 
 	// Migrate db
 	err := Migrate(dbName)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Create db
+	// Open db
 	db, err := sql.Open("sqlite3", fmt.Sprintf("%s.db?_fk=%s", dbName, url.QueryEscape("true")))
 	if err != nil {
 		log.Fatal(err)

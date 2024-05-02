@@ -177,7 +177,6 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 				ID:         -1,
 				Name:       tagName,
 				UsageCount: 1,
-				LastUsed:   time.Now(),
 			})
 		}
 	}
@@ -288,7 +287,6 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 				ID:         -1,
 				Name:       tagName,
 				UsageCount: 1,
-				LastUsed:   time.Now(),
 			})
 		}
 	}

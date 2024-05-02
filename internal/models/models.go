@@ -39,7 +39,6 @@ type Tag struct {
 	ID         int
 	Name       string
 	UsageCount int
-	LastUsed   time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
@@ -54,4 +53,25 @@ type Account struct {
 	TableOrder    int
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+}
+
+// Categories
+type Category struct {
+	ID int
+
+	Name string
+
+	BudgetInput       float64
+	LastInputDate     time.Time
+	InputInterval     time.Duration
+	SpendingLimit     float64
+	LastSpendingReset time.Time
+	SpendingInterval  time.Duration
+
+	InitialAmount float64
+	CurrentAmount float64
+
+	TableOrder int
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }

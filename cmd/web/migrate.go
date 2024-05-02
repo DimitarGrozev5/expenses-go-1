@@ -42,7 +42,7 @@ func Migrate(dbName string) error {
 					db_version	INTEGER
 
 					created_at	DATETIME				NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-					updated_at	DATETIME				NOT NULL	DEFAULT CURRENT_TIMESTAMP
+					updated_at	DATETIME							DEFAULT null
 				)`
 
 	// Execute query
@@ -73,7 +73,7 @@ func Migrate(dbName string) error {
 													ON DELETE RESTRICT,
 		
 		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-		updated_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
+		updated_at		DATETIME				DEFAULT null
 	)`
 
 	// Execute query
@@ -95,10 +95,9 @@ func Migrate(dbName string) error {
 
 		name		TEXT		NOT NULL	UNIQUE,
 		usage_count	INTEGER		NOT NULL					DEFAULT 0,
-		last_used	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
 
 		created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
-		updated_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP
+		updated_at	DATETIME								DEFAULT null
 	)`
 
 	// Execute query
@@ -120,7 +119,7 @@ func Migrate(dbName string) error {
 												ON UPDATE CASCADE,
 
 		created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
-		updated_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP
+		updated_at	DATETIME								DEFAULT null
 	)`
 
 	// Execute query
@@ -136,7 +135,8 @@ func Migrate(dbName string) error {
 	 * When a tag is linked to an expense
 	 * or a relation is changed
 	 * or a relation is removed
-	 * Update the affected tag usage count and last_used date
+	 * Update the affected tag usage count
+	 * Don't allow deletion of tags that have an usage count greather than zero
 	 */
 	stmt = `	CREATE TRIGGER tag_usage_count_insert
 					AFTER INSERT
@@ -144,7 +144,6 @@ func Migrate(dbName string) error {
 				BEGIN
 					UPDATE tags SET
 						usage_count = usage_count + 1,
-						last_used = datetime('now'),
 						updated_at = datetime('now')
 					WHERE tags.id = new.tag_id;
 				END;
@@ -156,7 +155,6 @@ func Migrate(dbName string) error {
 				BEGIN
 					UPDATE tags SET
 						usage_count = usage_count + 1,
-						last_used = datetime('now'),
 						updated_at = datetime('now')
 					WHERE tags.id = new.tag_id;
 					
@@ -174,6 +172,14 @@ func Migrate(dbName string) error {
 						usage_count = usage_count - 1,
 						updated_at = datetime('now')
 					WHERE tags.id = old.tag_id;
+				END;
+				
+				CREATE TRIGGER tags_prevent_deletion
+					BEFORE DELETE
+					ON tags
+					WHEN old.usage_count > 0
+				BEGIN
+					SELECT RAISE (ABORT, 'cant delete tags that are used');
 				END;`
 
 	// Execute query
@@ -212,7 +218,7 @@ func Migrate(dbName string) error {
 		table_order		INTEGER		NOT NULL	DEFAULT -1,
 
 		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-		updated_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
+		updated_at		DATETIME				DEFAULT null
 	)`
 
 	// Execute query
@@ -234,7 +240,18 @@ func Migrate(dbName string) error {
 	 *
 	 * Don't allow the deletion of accounts that have expenses linked to them
 	 */
-	stmt = `	CREATE TRIGGER account_current_amount_add
+	stmt = `    CREATE TRIGGER accounts_update_current_amount_when_initial_amount_changes
+					AFTER UPDATE
+					ON accounts
+					WHEN old.initial_amount <> new.initial_amount
+				BEGIN
+					UPDATE accounts SET 
+	 					current_amount = current_amount - old.initial_amount + new.initial_amount,
+						updated_at = datetime('now')
+					WHERE accounts.id = old.id;
+				END;
+				
+				CREATE TRIGGER account_current_amount_add
 					BEFORE INSERT
 					ON expenses
 				BEGIN
@@ -299,6 +316,7 @@ func Migrate(dbName string) error {
 				CREATE TRIGGER accounts_check_table_order
 					BEFORE UPDATE
 					ON accounts
+					WHEN old.table_order <> new.table_order
 				BEGIN
 					SELECT
 						CASE
@@ -312,6 +330,7 @@ func Migrate(dbName string) error {
 				CREATE TRIGGER accounts_auto_update_account_order
 					BEFORE UPDATE
 					ON accounts
+					WHEN old.table_order <> new.table_order
 				BEGIN
 					UPDATE accounts SET
 						table_order = old.table_order
@@ -374,7 +393,7 @@ func Migrate(dbName string) error {
 	stmt = ` CREATE TABLE categories (
 		id						INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 		
-		name					TEXT		NOT NULL,
+		name					TEXT		NOT NULL	UNIQUE,
 
 		budget_input			NUMERIC		NOT NULL		CHECK (budget_input >= 0),
 		last_input_date			DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
@@ -389,14 +408,21 @@ func Migrate(dbName string) error {
 															ON DELETE RESTRICT,
 
 		initial_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (initial_amount >= 0),
-		current_amount			NUMERIC		NOT NULL	DEFAULT 100		CHECK (current_amount >= 0),
+		current_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (current_amount >= 0),
 
 		table_order				INTEGER		NOT NULL	DEFAULT -1,
 
 		created_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-		updated_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
+		updated_at				DATETIME	null		DEFAULT null
 	)
 	`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
 
 	/*
 	 * Timeframes enum table
@@ -410,30 +436,37 @@ func Migrate(dbName string) error {
 	stmt = `	CREATE TABLE time_periods (
 		id						INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 
-		period					TEXT		NOT NULL	UNIQUE			CHECK (period IN (' YEARS', ' MONTHS', ' DAYS'))
+		period					TEXT		NOT NULL	UNIQUE			CHECK (period IN (' YEARS', ' MONTHS', ' DAYS')),
 
 		created_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-		updated_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP
-	 )
+		updated_at				DATETIME				DEFAULT null
+	 );
 
 	 CREATE TRIGGER dont_delete_from_time_periods
 		 BEFORE DELETE
 		 ON time_periods
 	 BEGIN
-		 RAISE (ABORT, 'Cant delete from time_periods')
+		 SELECT RAISE (ABORT, 'Cant delete from time_periods');
 	 END;
 
 	 CREATE TRIGGER dont_update_from_time_periods
 		 BEFORE UPDATE
 		 ON time_periods
 	 BEGIN
-		 RAISE (ABORT, 'Cant update in time_periods')
+		 SELECT RAISE (ABORT, 'Cant update in time_periods');
 	 END;
 
-	 INSERT INTO time_periods (period) VALUES (' YEARS')
-	 INSERT INTO time_periods (period) VALUES (' MONTHS')
-	 INSERT INTO time_periods (period) VALUES (' DAYS')
+	 INSERT INTO time_periods (period) VALUES (' YEARS');
+	 INSERT INTO time_periods (period) VALUES (' MONTHS');
+	 INSERT INTO time_periods (period) VALUES (' DAYS');
 	 `
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
 
 	/*
 	 * Triggers related to categories
@@ -455,7 +488,7 @@ func Migrate(dbName string) error {
 					UPDATE categories SET 
 	 					current_amount = current_amount - old.initial_amount + new.initial_amount,
 						updated_at = datetime('now')
-					WHERE categories.id = old.id
+					WHERE categories.id = old.id;
 				END;
 
 
@@ -523,9 +556,10 @@ func Migrate(dbName string) error {
 					WHERE categories.table_order = -1;
 				END;
 
-				CREATE TRIGGER categories_update_category_order
+				CREATE TRIGGER categories_stop_invalid_table_order_values
 					BEFORE UPDATE
 					ON categories
+					WHEN old.table_order <> new.table_order
 				BEGIN
 					SELECT
 						CASE
@@ -534,6 +568,16 @@ func Migrate(dbName string) error {
 							WHEN new.table_order > (SELECT COUNT(*) from categories) THEN
 								RAISE (ABORT, 'Cant move the last category down')
 						END;
+				END;
+
+				CREATE TRIGGER categories_auto_update_account_order
+					BEFORE UPDATE
+					ON categories
+					WHEN old.table_order <> new.table_order
+				BEGIN
+					UPDATE categories SET
+						table_order = old.table_order
+					WHERE categories.table_order = new.table_order;
 				END;
 
 				CREATE TRIGGER categories_update_order_after_delete
@@ -559,6 +603,13 @@ func Migrate(dbName string) error {
 						END;
 				END;
 	`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
 
 	return nil
 }
