@@ -34,16 +34,32 @@ func Migrate(dbName string) error {
 	 * It contains the current DB version. This will become important when the app is live, so it will be able to migrate the user databases when an update is pushed
 	 * In the future it can contain user settings if the need arises
 	 */
-	stmt := `CREATE TABLE user (
+	stmt := `	CREATE TABLE user (
 					id			INTEGER					NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 
 					email		TEXT		UNIQUE		NOT NULL,
 					password	TEXT					NOT NULL,
-					db_version	INTEGER
+					db_version	INTEGER,
+					free_funds	NUMERIC					NOT NULL	DEFAULT 0	CHECK (free_funds >= 0),
 
 					created_at	DATETIME				NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 					updated_at	DATETIME							DEFAULT null
-				)`
+				);
+				
+				CREATE VIEW procedure_add_free_funds AS
+					SELECT free_funds as amount, null as to_account FROM user;
+					
+				CREATE TRIGGER triggers__procedure_add_free_funds__update
+					INSTEAD OF INSERT
+					ON procedure_add_free_funds
+				BEGIN
+					UPDATE user SET
+						free_funds = free_funds + new.amount;
+
+					UPDATE accounts SET
+						current_amount = current_amount + new.amount
+					WHERE id = new.to_account;
+				END;`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -83,22 +99,45 @@ func Migrate(dbName string) error {
 		return err
 	}
 
+	/**
+	 **
+	 ** Expenses procedures
+	 **
+	 **/
+
 	/*
-	 * Tags table
-	 *
-	 * Expenses can be tagged
-	 * Each expense is meant to have at least one tag
-	 * The tags table tracks how many times is each tag used and when was the last useage time
+	 * Insert new expense
 	 */
-	stmt = `CREATE TABLE tags (
-		id			INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+	stmt = `CREATE VIEW procedure_new_expense AS
+				SELECT amount, date, from_account, from_category FROM expenses;
+				
+			CREATE TRIGGER triggers__procedure_new_expense__add_expense
+				INSTEAD OF INSERT
+				ON procedure_new_expense
+			BEGIN
+				INSERT INTO expenses (
+					amount,
+					date,
+					from_account,
+					from_category
+				) VALUES (
+					new.amount,
+					new.date,
+					new.from_account,
+					new.from_category
+				);
 
-		name		TEXT		NOT NULL	UNIQUE,
-		usage_count	INTEGER		NOT NULL					DEFAULT 0,
+				UPDATE accounts SET
+					current_amount = current_amount - new.amount,
+					usage_count = usage_count + 1,
+					updated_at = datetime('now')
+				WHERE accounts.id = new.from_account;
 
-		created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
-		updated_at	DATETIME								DEFAULT null
-	)`
+				UPDATE categories SET
+					current_amount = current_amount - new.amount,
+					updated_at = datetime('now')
+				WHERE categories.id = new.from_category;
+			END;`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -107,20 +146,212 @@ func Migrate(dbName string) error {
 		return err
 	}
 
-	// Many-to-many relationa table to link expenses and tags
+	/*
+	 * Delete expense
+	 */
+	stmt = `CREATE VIEW procedure_remove_expense AS
+				SELECT id, amount, from_account, from_category FROM expenses;
+			
+			CREATE TRIGGER triggers__procedure_remove_expense_remove
+				INSTEAD OF DELETE
+				ON procedure_remove_expense
+			BEGIN
+				DELETE FROM expenses WHERE id = old.id;
+
+				UPDATE accounts SET
+					current_amount = current_amount + old.amount,
+					usage_count = usage_count - 1,
+					updated_at = datetime('now')
+				WHERE accounts.id = old.from_account;
+				
+				UPDATE categories SET
+					current_amount = current_amount + old.amount,
+					updated_at = datetime('now')
+				WHERE categories.id = old.from_category;
+			END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Update expense
+	 */
+	stmt = `CREATE VIEW procedure_update_expense AS
+				SELECT id, amount, date, from_account, from_category FROM expenses;
+			
+			CREATE TRIGGER triggers__procedure_update_expense__update
+				INSTEAD OF UPDATE
+				ON procedure_update_expense
+			BEGIN
+				UPDATE expenses SET
+					amount = 		COALESCE(new.amount, old.amount),
+					date = 			COALESCE(new.date, old.date),
+					from_account = 	COALESCE(new.from_account, old.from_account),
+					from_category =	COALESCE(new.from_category, old.from_category),
+					updated_at = datetime('now')
+				WHERE id = new.id;
+			END;
+			
+			CREATE TRIGGER triggers__procedure_update_expense__amount_changes_account_stays_the_same
+				BEFORE UPDATE
+				ON expenses
+				WHEN
+					old.amount <> new.amount AND
+					old.from_account = new.from_account
+			BEGIN
+				UPDATE accounts SET
+					current_amount = current_amount + old.amount - new.amount,
+					updated_at = datetime('now')
+				WHERE accounts.id = new.from_account;
+			END;
+			
+			CREATE TRIGGER triggers__procedure_update_expense__account_changes
+				BEFORE UPDATE
+				ON expenses
+				WHEN old.from_account <> new.from_account
+			BEGIN
+				UPDATE accounts SET
+					current_amount = current_amount + old.amount,
+					usage_count = usage_count - 1,
+					updated_at = datetime('now')
+				WHERE accounts.id = old.from_account;
+				
+				UPDATE accounts SET
+					current_amount = current_amount - new.amount,
+					usage_count = usage_count + 1,
+					updated_at = datetime('now')
+				WHERE accounts.id = new.from_account;
+			END;
+			
+			CREATE TRIGGER triggers__procedure_update_expense__amount_changes_category_stays_the_same
+				BEFORE UPDATE
+				ON expenses
+				WHEN
+					old.amount <> new.amount AND
+					old.from_category = new.from_category
+			BEGIN
+				UPDATE categories SET
+					current_amount = current_amount + old.amount - new.amount,
+					updated_at = datetime('now')
+				WHERE categories.id = new.from_category;
+			END;
+
+			CREATE TRIGGER triggers__procedure_update_expense__category_changes
+				BEFORE UPDATE
+				ON expenses
+				WHEN old.from_category <> new.from_category
+			BEGIN
+				UPDATE categories SET
+					current_amount = current_amount + old.amount,
+					updated_at = datetime('now')
+				WHERE categories.id = old.from_category;
+				
+				UPDATE categories SET
+					current_amount = current_amount - new.amount,
+					updated_at = datetime('now')
+				WHERE categories.id = new.from_category;
+			END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Tags table
+	 *
+	 * Expenses can be tagged
+	 * Each expense is meant to have at least one tag
+	 * The tags table tracks how many times is each tag used and when was the last useage time
+	 */
+	stmt = `CREATE TABLE tags (
+			id			INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+
+			name		TEXT		NOT NULL	UNIQUE,
+			usage_count	INTEGER		NOT NULL					DEFAULT 0,
+
+			created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
+			updated_at	DATETIME								DEFAULT null
+		);
+	
+		CREATE VIEW procedure_insert_tag AS
+			SELECT name FROM tags;
+		
+		CREATE TRIGGER trigger__procedure_insert_tag__insert
+			INSTEAD OF INSERT
+			ON procedure_insert_tag
+		BEGIN
+			INSERT INTO tags (name) VALUES (new.name)
+				ON CONFLICT (name) DO NOTHING;
+		END;
+		
+		CREATE VIEW procedure_remove_tag AS
+				SELECT id, usage_count FROM tags;
+			
+		CREATE TRIGGER triggers__procedure_remove_tag
+			INSTEAD OF DELETE
+			ON procedure_remove_tag
+		BEGIN
+			DELETE FROM tags WHERE id = old.id;
+		END;`
+
+	// CREATE TRIGGER triggers__expense_tags__tags_prevent_deletion
+	// 				BEFORE DELETE
+	// 				ON tags
+	// 				WHEN old.usage_count > 0
+	// 			BEGIN
+	// 				SELECT RAISE (ABORT, 'cant delete tags that are used');
+	// 			END;
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	// Many-to-many relations table to link expenses and tags
 	stmt = `CREATE TABLE expense_tags (
-		id			INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+				id			INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 
-		expense_id	INTEGER		NOT NULL	REFERENCES expenses (id)
-												ON DELETE CASCADE
-												ON UPDATE CASCADE,
-		tag_id		INTEGER		NOT NULL	REFERENCES tags (id)
-												ON DELETE CASCADE
-												ON UPDATE CASCADE,
+				expense_id	INTEGER		NOT NULL	REFERENCES expenses (id)
+														ON DELETE CASCADE
+														ON UPDATE CASCADE,
+				tag_id		INTEGER		NOT NULL	REFERENCES tags (id)
+														ON DELETE RESTRICT
+														ON UPDATE CASCADE,
 
-		created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
-		updated_at	DATETIME								DEFAULT null
-	)`
+				created_at	DATETIME	NOT NULL					DEFAULT CURRENT_TIMESTAMP,
+				updated_at	DATETIME								DEFAULT null
+			);
+
+			
+			CREATE VIEW procedure_link_tag_to_expense AS
+				SELECT expense_id, tag_id FROM expense_tags;
+				
+			CREATE TRIGGER trigger__procedure_link_tag_to_expense__add
+				INSTEAD OF INSERT
+				ON procedure_link_tag_to_expense
+			BEGIN
+				INSERT INTO expense_tags (expense_id, tag_id) VALUES (new.expense_id, new.tag_id);
+			END;
+			
+			
+			CREATE VIEW procedure_unlink_tag_from_expense AS
+				SELECT id, expense_id, tag_id FROM expense_tags;
+				
+			CREATE TRIGGER trigger__procedure_unlink_tag_from_expense__remove
+				INSTEAD OF DELETE
+				ON procedure_unlink_tag_from_expense
+			BEGIN
+				DELETE FROM expense_tags WHERE id = old.id;
+			END;`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -138,7 +369,7 @@ func Migrate(dbName string) error {
 	 * Update the affected tag usage count
 	 * Don't allow deletion of tags that have an usage count greather than zero
 	 */
-	stmt = `	CREATE TRIGGER tag_usage_count_insert
+	stmt = `	CREATE TRIGGER triggers__expense_tags__tag_usage_count_insert
 					AFTER INSERT
 					ON expense_tags
 				BEGIN
@@ -148,7 +379,7 @@ func Migrate(dbName string) error {
 					WHERE tags.id = new.tag_id;
 				END;
 				
-				CREATE TRIGGER tag_usage_count_update
+				CREATE TRIGGER triggers__expense_tags__tag_usage_count_update
 					AFTER UPDATE
 					ON expense_tags
 					WHEN old.tag_id <> new.tag_id
@@ -164,7 +395,7 @@ func Migrate(dbName string) error {
 					WHERE tags.id = old.tag_id;
 				END;
 				
-				CREATE TRIGGER tag_usage_count_delete
+				CREATE TRIGGER triggers__expense_tags__tag_usage_count_delete
 					AFTER DELETE
 					ON expense_tags
 				BEGIN
@@ -172,14 +403,6 @@ func Migrate(dbName string) error {
 						usage_count = usage_count - 1,
 						updated_at = datetime('now')
 					WHERE tags.id = old.tag_id;
-				END;
-				
-				CREATE TRIGGER tags_prevent_deletion
-					BEFORE DELETE
-					ON tags
-					WHEN old.usage_count > 0
-				BEGIN
-					SELECT RAISE (ABORT, 'cant delete tags that are used');
 				END;`
 
 	// Execute query
@@ -189,7 +412,6 @@ func Migrate(dbName string) error {
 		return err
 	}
 
-	// TODO: make default values of inital_amount 0; It's 100 for dev purposes
 	/*
 	 * Accounts table
 	 *
@@ -211,11 +433,10 @@ func Migrate(dbName string) error {
 		id				INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 		
 		name			TEXT		NOT NULL	UNIQUE		CHECK (length(name) > 3),
-		initial_amount	NUMERIC		NOT NULL	DEFAULT 0	CHECK (initial_amount >= 0),
 		current_amount	NUMERIC		NOT NULL	DEFAULT 0	CHECK (current_amount >= 0),
 
 		usage_count		INTEGER		NOT NULL	DEFAULT 0,
-		table_order		INTEGER		NOT NULL	DEFAULT -1,
+		table_order		INTEGER		NOT NULL				CHECK (table_order > 0),
 
 		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at		DATETIME				DEFAULT null
@@ -228,135 +449,129 @@ func Migrate(dbName string) error {
 		return err
 	}
 
+	/**
+	 **
+	 ** Account procedures
+	 **
+	 **/
+
 	/*
-	 * Account related triggers
+	 * Create new account
 	 *
-	 * When an expense is added
-	 * Update the related account current_amount and usage_count
-	 *
-	 * When an account is created, update it's table_order so it is the next available number
-	 * Prevent the order being changed bellow 0 and above the current max number
-	 * When an account is deleted, update all of the table orders so there are no gaps
-	 *
-	 * Don't allow the deletion of accounts that have expenses linked to them
+	 * Provide only a name. Everything else is auto generated
 	 */
-	stmt = `    CREATE TRIGGER accounts_update_current_amount_when_initial_amount_changes
-					AFTER UPDATE
-					ON accounts
-					WHEN old.initial_amount <> new.initial_amount
-				BEGIN
-					UPDATE accounts SET 
-	 					current_amount = current_amount - old.initial_amount + new.initial_amount,
-						updated_at = datetime('now')
-					WHERE accounts.id = old.id;
-				END;
+	stmt = `CREATE VIEW procedure_new_account AS
+				SELECT name FROM accounts;
 				
-				CREATE TRIGGER account_current_amount_add
-					BEFORE INSERT
-					ON expenses
-				BEGIN
-					UPDATE accounts SET
-						current_amount = current_amount - new.amount,
-						usage_count = usage_count + 1,
-						updated_at = datetime('now')
-					WHERE accounts.id = new.from_account;
-				END;
+			CREATE TRIGGER trigger__procedure_new_account__insert_new_account
+				INSTEAD OF INSERT
+				ON procedure_new_account
+			BEGIN
+				INSERT INTO accounts (
+					name,
+					table_order
+				) VALUES (
+					new.name,
+					(SELECT COUNT(*) FROM accounts) + 1
+				);
+			END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Edit account name
+	 */
+	stmt = `CREATE VIEW procedure_account_name AS
+				SELECT id, name FROM accounts;
 				
-				CREATE TRIGGER account_current_amount_remove
-					BEFORE DELETE
-					ON expenses
-				BEGIN
-					UPDATE accounts SET
-						current_amount = current_amount + old.amount,
-						usage_count = usage_count - 1,
-						updated_at = datetime('now')
-					WHERE accounts.id = old.from_account;
-				END;
+			CREATE TRIGGER trigger__procedure_account_name__update_account_name
+				INSTEAD OF UPDATE
+				ON procedure_account_name
+				WHEN
+					old.name <> new.name AND
+					old.id = new.id
+			BEGIN
+				UPDATE accounts SET name=new.name WHERE id=new.id;
+			END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Change accounts order
+	 *
+	 * When updating, pass new table_order value
+	 * Too big or too small values throw an error
+	 */
+	stmt = `CREATE VIEW procedure_change_accounts_order AS
+	 			SELECT id, table_order FROM accounts;
 				
-				CREATE TRIGGER account_current_amount_update_amount
-					BEFORE UPDATE
-					ON expenses
-					WHEN
-						old.amount <> new.amount AND
-						old.from_account = new.from_account
-				BEGIN
-					UPDATE accounts SET
-						current_amount = current_amount + old.amount - new.amount,
-						updated_at = datetime('now')
-					WHERE accounts.id = new.from_account;
-				END;
+			CREATE TRIGGER trigger__procedure_change_accounts_order__swap_table_orders
+				INSTEAD OF UPDATE
+				ON procedure_change_accounts_order
+				WHEN
+					old.table_order <> new.table_order AND
+					old.id = new.id
+			BEGIN
+				SELECT
+					CASE
+						WHEN new.table_order < 1 THEN
+							RAISE (ABORT, 'cant move last account down')
+						WHEN new.table_order > (SELECT COUNT(*) from accounts) THEN
+							RAISE (ABORT, 'cant move first account up')
+					END;
 				
-				CREATE TRIGGER account_current_amount_update_account
-					BEFORE UPDATE
-					ON expenses
-					WHEN old.from_account <> new.from_account
-				BEGIN
-					UPDATE accounts SET
-						current_amount = current_amount + old.amount,
-						usage_count = usage_count - 1
-					WHERE accounts.id = old.from_account;
-					
-					UPDATE accounts SET
-						current_amount = current_amount - new.amount,
-						usage_count = usage_count + 1,
-						updated_at = datetime('now')
-					WHERE accounts.id = new.from_account;
-				END;
+				UPDATE accounts SET
+					table_order = old.table_order
+				WHERE table_order = new.table_order;
 
-				CREATE TRIGGER accounts_set_order_for_new_accounts
-					AFTER INSERT
-					ON accounts
-				BEGIN
-					UPDATE accounts SET
-						table_order = (SELECT COUNT(*) FROM accounts),
-						updated_at = datetime('now')
-					WHERE accounts.table_order = -1;
-				END;
+				UPDATE accounts SET
+					table_order = new.table_order
+				WHERE id = new.id;
+			END;`
 
-				CREATE TRIGGER accounts_check_table_order
-					BEFORE UPDATE
-					ON accounts
-					WHEN old.table_order <> new.table_order
-				BEGIN
-					SELECT
-						CASE
-							WHEN new.table_order < 1 THEN
-								RAISE (ABORT, 'Cant move the first account up')
-							WHEN new.table_order > (SELECT COUNT(*) from accounts) THEN
-								RAISE (ABORT, 'Cant move the last account down')
-						END;
-				END;
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
 
-				CREATE TRIGGER accounts_auto_update_account_order
-					BEFORE UPDATE
-					ON accounts
-					WHEN old.table_order <> new.table_order
-				BEGIN
-					UPDATE accounts SET
-						table_order = old.table_order
-					WHERE accounts.table_order = new.table_order;
-				END;
+	/*
+	 * Delete account
+	 *
+	 * Remove account and update table order of the rest of the accounts so there are no gaps
+	 */
+	stmt = `CREATE VIEW procedure_remove_account AS
+				SELECT id, table_order FROM accounts;
+			
+			CREATE TRIGGER triggers__procedure_remove_account__delete_account
+				INSTEAD OF DELETE
+				ON procedure_remove_account
+			BEGIN
+				SELECT
+					CASE
+						WHEN current_amount > 0 THEN
+							RAISE (ABORT, 'cant delete an account that is used')
+					END
+				FROM accounts
+				WHERE id = old.id;
 
-				CREATE TRIGGER accounts_block_delete
-					BEFORE DELETE
-					ON accounts
-				BEGIN
-					SELECT
-						CASE
-							WHEN old.usage_count > 0 THEN
-								RAISE (ABORT, 'Cant delete account that is being used')
-						END;
-				END;
+				DELETE FROM accounts WHERE id=old.id;
 
-				CREATE TRIGGER accounts_update_order_after_delete
-					AFTER DELETE
-					ON accounts
-				BEGIN
-					UPDATE accounts SET
-						table_order = table_order - 1
-					WHERE accounts.table_order > old.table_order;
-				END;
-	`
+				UPDATE accounts SET
+					table_order = table_order - 1
+				WHERE table_order > old.table_order;
+			END;`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -377,6 +592,7 @@ func Migrate(dbName string) error {
 	 * Input interval value - the amount of periods. e.g. 3 DAYS, 4 MONTHS
 	 *
 	 * Spending limit - the maximum amount the user plans to spend
+	 * Spending left - the amount of money the user is allowed to spend until the end of the spending period
 	 * Last spending reset - the last time the spending limit was reset
 	 * Spending interval period - the period over which the spending limit has been imposed
 	 * Spending interval value - the amount of periods. e.g. 3 DAYS, 1 MONTHS
@@ -402,6 +618,7 @@ func Migrate(dbName string) error {
 															ON DELETE RESTRICT,
 
 		spending_limit			NUMERIC		NOT NULL		CHECK (budget_input >= 0),
+		spending_left			NUMERIC		NOT NULL,
 		last_spending_reset		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		spending_interval		INTEGER		NOT NULL		CHECK (input_interval > 0),
 		spending_period			INTEGER		NOT NULL	REFERENCES time_periods (id)
@@ -410,12 +627,169 @@ func Migrate(dbName string) error {
 		initial_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (initial_amount >= 0),
 		current_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (current_amount >= 0),
 
-		table_order				INTEGER		NOT NULL	DEFAULT -1,
+		table_order				INTEGER		NOT NULL					CHECK (table_order > 0),
 
 		created_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at				DATETIME	null		DEFAULT null
 	)
 	`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/**
+	 **
+	 ** Category stored procedures
+	 **
+	 **/
+
+	/*
+	 * Create new category
+	 */
+	stmt = `CREATE VIEW procedure_new_category AS
+				SELECT 
+					name,
+					budget_input,
+					input_interval,
+					input_period,
+					spending_limit,
+					spending_interval,
+					spending_period
+				FROM categories;
+				
+			CREATE TRIGGER triggers__procedure_new_category__insert_new
+				INSTEAD OF INSERT
+				ON procedure_new_category
+			BEGIN
+				INSERT INTO categories (
+					name,
+					budget_input,
+					input_interval,
+					input_period,
+					spending_limit,
+					spending_left,
+					spending_interval,
+					spending_period,
+					initial_amount,
+					current_amount,
+					table_order
+				) VALUES (
+					new.name,
+					new.budget_input,
+					new.input_interval,
+					new.input_period,
+					new.spending_limit,
+					new.spending_limit,
+					new.spending_interval,
+					new.spending_period,
+					0,
+					0,
+					(SELECT COUNT(*) FROM categories) + 1
+				);
+			END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Update category name
+	 */
+	stmt = `CREATE VIEW procedure_category_name AS
+				SELECT id, name FROM categories;
+				
+			CREATE TRIGGER trigger__procedure_category_name__update_name
+				INSTEAD OF UPDATE
+				ON procedure_category_name
+				WHEN
+					old.name <> new.name AND
+					old.id = new.id
+				BEGIN
+					UPDATE categories SET
+						name = new.name
+					WHERE id = new.id;
+				END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Update categories order
+	 *
+	 * When updating, pass new table_order value
+	 * Too big or too small values throw an error
+	 */
+	stmt = `CREATE VIEW procedure_change_categories_order AS
+	 			SELECT id, table_order FROM categories;
+				
+			CREATE TRIGGER trigger__procedure_change_categories_order__swap_table_order
+				INSTEAD OF UPDATE
+				ON procedure_change_categories_order
+				WHEN
+					old.table_order <> new.table_order AND
+					old.id = new.id
+			BEGIN
+				SELECT
+					CASE
+						WHEN new.table_order < 1 THEN
+							RAISE (ABORT, 'cant move last category down')
+						WHEN new.table_order > (SELECT COUNT(*) from categories) THEN
+							RAISE (ABORT, 'cant move first category up')
+					END;
+				
+				UPDATE categories SET
+					table_order = old.table_order
+				WHERE table_order = new.table_order;
+
+				UPDATE categories SET
+					table_order = new.table_order
+				WHERE id = new.id;
+			END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Procedure to delete unused categories
+	 *
+	 * A category is unused when it's not referenced by an other table and doens't have funds
+	 */
+	stmt = `CREATE VIEW procedure_remove_category AS
+				SELECT id, table_order FROM categories;
+				
+			CREATE TRIGGER trigger__procedure_remove_category__remove_category
+				INSTEAD OF DELETE
+				ON procedure_remove_category
+			BEGIN
+				SELECT
+					CASE
+						WHEN initial_amount > 0 THEN
+							RAISE (ABORT, 'cant delete a category that is used')
+					END
+				FROM categories
+				WHERE id = old.id;
+
+				DELETE FROM categories WHERE id = old.id;
+
+				UPDATE categories SET
+					table_order = table_order - 1
+				WHERE table_order > old.table_order;
+			END;`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -460,149 +834,6 @@ func Migrate(dbName string) error {
 	 INSERT INTO time_periods (period) VALUES (' MONTHS');
 	 INSERT INTO time_periods (period) VALUES (' DAYS');
 	 `
-
-	// Execute query
-	_, err = db.Exec(stmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, stmt)
-		return err
-	}
-
-	/*
-	 * Triggers related to categories
-	 *
-	 * When user updates category initial_amount, update current amount value
-	 *
-	 * When expense is changed, update current amount
-	 *
-	 * Handle table order changes similar to accounts
-	 *
-	 * Block deletion of accounts with funds in them
-	 */
-	stmt = `
-	 			CREATE TRIGGER categories_update_current_amount_when_initial_amount_changes
-					AFTER UPDATE
-					ON categories
-					WHEN old.initial_amount <> new.initial_amount
-				BEGIN
-					UPDATE categories SET 
-	 					current_amount = current_amount - old.initial_amount + new.initial_amount,
-						updated_at = datetime('now')
-					WHERE categories.id = old.id;
-				END;
-
-
-
-				CREATE TRIGGER categories_expenses_is_added
-					BEFORE INSERT
-					ON expenses
-				BEGIN
-					UPDATE categories SET
-						current_amount = current_amount - new.amount,
-						updated_at = datetime('now')
-					WHERE categories.id = new.from_category;
-				END;
-				
-				CREATE TRIGGER categories_expense_is_removed
-					BEFORE DELETE
-					ON expenses
-				BEGIN
-					UPDATE categories SET
-						current_amount = current_amount + old.amount,
-						updated_at = datetime('now')
-					WHERE categories.id = old.from_category;
-				END;
-				
-				CREATE TRIGGER categories_expense_amount_is_changed
-					BEFORE UPDATE
-					ON expenses
-					WHEN
-						old.amount <> new.amount AND
-						old.from_category = new.from_category
-				BEGIN
-					UPDATE categories SET
-						current_amount = current_amount + old.amount - new.amount,
-						updated_at = datetime('now')
-					WHERE categories.id = new.from_category;
-				END;
-
-				CREATE TRIGGER categories_expense_category_is_changed
-					BEFORE UPDATE
-					ON expenses
-					WHEN old.from_category <> new.from_category
-				BEGIN
-					UPDATE categories SET
-						current_amount = current_amount + old.amount,
-						usage_count = usage_count - 1
-					WHERE categories.id = old.from_category;
-					
-					UPDATE categories SET
-						current_amount = current_amount - new.amount,
-						usage_count = usage_count + 1,
-						updated_at = datetime('now')
-					WHERE categories.id = new.from_category;
-				END;
-
-
-
-
-				CREATE TRIGGER categories_set_order_for_new_accounts
-					AFTER INSERT
-					ON categories
-				BEGIN
-					UPDATE categories SET
-						table_order = (SELECT COUNT(*) FROM categories),
-						updated_at = datetime('now')
-					WHERE categories.table_order = -1;
-				END;
-
-				CREATE TRIGGER categories_stop_invalid_table_order_values
-					BEFORE UPDATE
-					ON categories
-					WHEN old.table_order <> new.table_order
-				BEGIN
-					SELECT
-						CASE
-							WHEN new.table_order < 1 THEN
-								RAISE (ABORT, 'Cant move the first category up')
-							WHEN new.table_order > (SELECT COUNT(*) from categories) THEN
-								RAISE (ABORT, 'Cant move the last category down')
-						END;
-				END;
-
-				CREATE TRIGGER categories_auto_update_account_order
-					BEFORE UPDATE
-					ON categories
-					WHEN old.table_order <> new.table_order
-				BEGIN
-					UPDATE categories SET
-						table_order = old.table_order
-					WHERE categories.table_order = new.table_order;
-				END;
-
-				CREATE TRIGGER categories_update_order_after_delete
-					AFTER DELETE
-					ON categories
-				BEGIN
-					UPDATE categories SET
-						table_order = table_order - 1
-					WHERE categories.table_order > old.table_order;
-				END;
-
-
-				
-
-				CREATE TRIGGER categories_block_delete
-					BEFORE DELETE
-					ON categories
-				BEGIN
-					SELECT
-						CASE
-							WHEN old.current_amount > 0 THEN
-								RAISE (ABORT, 'Cant delete category that is being used')
-						END;
-				END;
-	`
 
 	// Execute query
 	_, err = db.Exec(stmt)

@@ -2,11 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	cp "github.com/otiai10/copy"
@@ -15,10 +18,14 @@ import (
 var db *sql.DB
 
 // Setup functions
-func beforeAll() {
+func beforeAll(t *testing.T) {
 	if db == nil {
 		// Get DB name
 		dbName := "test"
+
+		// Remove old db
+		os.Remove("test.db")
+		os.Remove("test_copy.db")
 
 		// Migrate db
 		err := Migrate(dbName)
@@ -30,6 +37,13 @@ func beforeAll() {
 		db, err = sql.Open("sqlite3", fmt.Sprintf("%s.db?_fk=%s", dbName, url.QueryEscape("true")))
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		// Insert user
+		stmt := `INSERT INTO user (email, password, db_version) VALUES ('test@test.test', 'adsdasdsadas', 1)`
+		_, err = db.Exec(stmt)
+		if err != nil {
+			t.Error("couldn't add free funds;", err)
 		}
 
 		// Copy db
@@ -53,13 +67,8 @@ func afterAll() {
 
 // Setup multiple tests
 func setupMultiple(t *testing.T, tests ...func(t *testing.T)) {
-	beforeAll()
-	defer func() {
-		if r := recover(); r != nil {
-			afterAll()
-		}
-		afterAll()
-	}()
+	beforeAll(t)
+	defer afterAll()
 
 	for _, test := range tests {
 		beforeEach()
@@ -75,223 +84,373 @@ func TestMigration(t *testing.T) {
 		 * Account tests
 		 *
 		 */
-		// When you insert an account it should have the correct table_order
+		// You can insert an account using an insert procedure
 		func(t *testing.T) {
 			// Insert account
-			stmt := `INSERT INTO accounts (name) VALUES ('test account')`
+			stmt := `INSERT INTO procedure_new_account (name) VALUES ('test account')`
 
 			// Execute
 			_, err := db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't insert an account")
+				t.Error("couldn't insert an account using procedure", err)
 				return
 			}
 
-			var table_order int
-
-			// Test account table order
-			query := `SELECT table_order FROM accounts WHERE id=1`
-
-			// Get rows
-			row := db.QueryRow(query)
-
-			// Scan row into model
-			err = row.Scan(&table_order)
+			// Get accounts
+			accounts, err := getAccounts(t)
 			if err != nil {
-				t.Error("error getting account")
 				return
 			}
 
-			// Test table_order
-			if table_order != 1 {
-				t.Errorf("table_order is %d; it has to be 1", table_order)
+			// Check if order is ok
+			if len(accounts) > 1 {
+				t.Errorf("too many accounts: %d, expected 1", len(accounts))
+				return
+			}
+			if accounts[0].Name != "test account" {
+				t.Errorf("wrong account name; expected 'test account'; received %s", accounts[0].Name)
+				return
+			}
+			if accounts[0].CurrentAmount != 0 {
+				t.Errorf("wrong account current amount; expected 0; received %.2f", accounts[0].CurrentAmount)
+				return
+			}
+			if accounts[0].UsageCount != 0 {
+				t.Errorf("wrong account usage count; expected 0; received %d", accounts[0].UsageCount)
+				return
+			}
+			if accounts[0].TableOrder != 1 {
+				t.Errorf("wrong account table order; expected 1; received %d", accounts[0].TableOrder)
+				return
 			}
 
-			// Add two more accounts
 			// Insert account
-			stmt = `INSERT INTO accounts (name) VALUES ('test account1');
-					INSERT INTO accounts (name) VALUES ('test account2');`
+			stmt = `INSERT INTO procedure_new_account (name) VALUES ('test account 1')`
 
 			// Execute
 			_, err = db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't insert two more accounts")
+				t.Error("couldn't insert an account using procedure", err)
 				return
 			}
 
-			// Get rows
-			query = `SELECT table_order FROM accounts WHERE id > 1`
-
-			// Get rows
-			rows, err := db.Query(query)
+			// Get accounts
+			accounts, err = getAccounts(t)
 			if err != nil {
-				t.Error("couldn't get new accounts")
 				return
 			}
 
-			var table_orders []int
-
-			for rows.Next() {
-				err = rows.Scan(&table_order)
-				if err != nil {
-					t.Error("couldn't scan new account")
-					return
-				}
-				table_orders = append(table_orders, table_order)
+			// Check if order is ok
+			if len(accounts) > 2 {
+				t.Errorf("too many accounts: %d, expected 2", len(accounts))
+				return
 			}
-
-			if table_orders[0] != 2 || table_orders[1] != 3 {
-				t.Errorf("table oreder of second and third account is %d, %d; has to be 2, 3", table_orders[0], table_orders[1])
+			if accounts[1].Name != "test account 1" {
+				t.Errorf("wrong account name; expected 'test account 1'; received %s", accounts[1].Name)
+				return
+			}
+			if accounts[1].CurrentAmount != 0 {
+				t.Errorf("wrong account current amount; expected 0; received %.2f", accounts[1].CurrentAmount)
+				return
+			}
+			if accounts[1].UsageCount != 0 {
+				t.Errorf("wrong account usage count; expected 0; received %d", accounts[1].UsageCount)
+				return
+			}
+			if accounts[1].TableOrder != 2 {
+				t.Errorf("wrong account table order; expected 2; received %d", accounts[1].TableOrder)
 				return
 			}
 		},
 
-		// When you delete an account, the table order should update
+		// You can rename account using procedure
 		func(t *testing.T) {
 			// Insert account
-			stmt := `INSERT INTO accounts (name) VALUES ('test account1');
-					 INSERT INTO accounts (name) VALUES ('test account2');
-					 INSERT INTO accounts (name) VALUES ('test account3');
-					 INSERT INTO accounts (name) VALUES ('test account4');`
+			stmt := `INSERT INTO procedure_new_account (name) VALUES ('test account')`
 
 			// Execute
 			_, err := db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't insert accounts;", err)
+				t.Error("couldn't insert an account using procedure", err)
+				return
+			}
+
+			// Get accounts
+			accounts, err := getAccounts(t)
+			if err != nil {
+				return
+			}
+
+			// Check if order is ok
+			if accounts[0].Name != "test account" {
+				t.Errorf("wrong account name; expected 'test account'; received %s", accounts[0].Name)
+				return
+			}
+
+			// Rename account
+			stmt = `UPDATE procedure_account_name SET name='test name 2' WHERE id=1`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert an account using procedure", err)
+				return
+			}
+
+			// Get accounts
+			accounts, err = getAccounts(t)
+			if err != nil {
+				return
+			}
+
+			// Check name
+			if accounts[0].Name != "test name 2" {
+				t.Errorf("wrong account name; expected 'test name 2'; received %s", accounts[0].Name)
+				return
+			}
+		},
+
+		// You can move account up and down
+		func(t *testing.T) {
+			// Insert accounts
+			stmt := `	INSERT INTO procedure_new_account (name) VALUES ('acc 1');
+						INSERT INTO procedure_new_account (name) VALUES ('acc 2');
+						INSERT INTO procedure_new_account (name) VALUES ('acc 3')`
+
+			// Execute
+			_, err := db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert a accounts using procedure", err)
+				return
+			}
+
+			testOrder := func(a, b, c int) error {
+
+				// Get accounts
+				accounts, err := getAccounts(t)
+				if err != nil {
+					return err
+				}
+
+				// Check if order is ok
+				if !(accounts[0].TableOrder == a && accounts[1].TableOrder == b && accounts[2].TableOrder == c) {
+					t.Errorf(
+						"error with accounts order; expected %d, %d, %d; received %d, %d, %d",
+						a,
+						b,
+						c,
+						accounts[0].TableOrder,
+						accounts[1].TableOrder,
+						accounts[2].TableOrder,
+					)
+					return errors.New("error with acount order")
+				}
+
+				return nil
+			}
+
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move first account up
+			stmt = `UPDATE procedure_change_accounts_order SET table_order=4 WHERE id=3;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err == nil {
+				t.Error("should not be able to move first account up; expected error; received nil")
+				return
+			}
+			if !strings.HasPrefix(err.Error(), "cant move first account up") {
+				t.Errorf("wrong error; expected 'cant move first account up'; received %s", err)
+				return
+			}
+
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move last account down
+			stmt = `UPDATE procedure_change_accounts_order SET table_order=0 WHERE id=1;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err == nil {
+				t.Error("should not be able to move last account down; expected error; received nil")
+				return
+			}
+			if !strings.HasPrefix(err.Error(), "cant move last account down") {
+				t.Errorf("wrong error; expected 'cant move last account down'; received %s", err.Error())
+				return
+			}
+
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move first account to the middle
+			stmt = `UPDATE procedure_change_accounts_order SET table_order=2 WHERE id=1;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't change account table order", err)
+				return
+			}
+
+			// Test order
+			err = testOrder(2, 1, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move first account back to the start
+			stmt = `UPDATE procedure_change_accounts_order SET table_order=1 WHERE id=1;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't change account table order", err)
+				return
+			}
+
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+		},
+
+		// You can delete an unused account and the table_order will update on all others
+		func(t *testing.T) {
+			// Insert accounts
+			stmt := `	INSERT INTO procedure_new_account (name) VALUES ('acc 1');
+						INSERT INTO procedure_new_account (name) VALUES ('acc 2');
+						INSERT INTO procedure_new_account (name) VALUES ('acc 3');
+						INSERT INTO procedure_new_account (name) VALUES ('acc 4');`
+
+			// Execute
+			_, err := db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert a accounts using procedure", err)
+				return
+			}
+
+			testOrder := func(acc ...[]int) error {
+
+				// Get accounts
+				accounts, err := getAccounts(t)
+				if err != nil {
+					return err
+				}
+
+				for i, a := range acc {
+
+					// Check if order is ok
+					if accounts[i].TableOrder != a[1] || accounts[i].ID != a[0] {
+						t.Errorf(
+							"error with accounts order; expected %d, %d; received %d, %d",
+							a[0],
+							a[1],
+							accounts[i].ID,
+							accounts[i].TableOrder,
+						)
+						return errors.New("error with acount order")
+					}
+				}
+
+				return nil
+			}
+
+			err = testOrder([]int{1, 1}, []int{2, 2}, []int{3, 3}, []int{4, 4})
+			if err != nil {
 				return
 			}
 
 			// Delete second account
-			stmt = `DELETE FROM accounts WHERE id=2`
+			stmt = `DELETE FROM procedure_remove_account WHERE id=2;`
 
 			// Execute
 			_, err = db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't delete the second account")
+				t.Error("couldn't delete accounts using procedure", err)
 				return
 			}
 
-			var table_orders []int
-
-			// Get rows
-			query := `SELECT table_order FROM accounts ORDER BY table_order ASC`
-
-			// Get rows
-			rows, err := db.Query(query)
+			// Test order
+			err = testOrder([]int{1, 1}, []int{3, 2}, []int{4, 3})
 			if err != nil {
-				t.Error("couldn't get new accounts")
 				return
 			}
 
-			for rows.Next() {
-				var table_order int
-				err = rows.Scan(&table_order)
-				if err != nil {
-					t.Error("couldn't scan new account")
-					return
-				}
-				table_orders = append(table_orders, table_order)
-			}
+			// Delete third account
+			stmt = `DELETE FROM procedure_remove_account WHERE id=3;`
 
-			// Check if order is ok
-			if len(table_orders) > 3 {
-				t.Errorf("too many items in table_orsers: %d, expected 3", len(table_orders))
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't delete accounts using procedure", err)
 				return
 			}
-			if table_orders[0] != 1 || table_orders[1] != 2 || table_orders[2] != 3 {
-				t.Errorf("accounts order doesn't match; expected: 1, 2, 3; received: %d, %d, %d", table_orders[0], table_orders[1], table_orders[2])
+
+			// Test order
+			err = testOrder([]int{1, 1}, []int{4, 2})
+			if err != nil {
 				return
 			}
 		},
 
-		// Can update account order
+		// You can't delete an account that is being used. Account is being used when it's referenced by excpenses or when it has funds
 		func(t *testing.T) {
-			// Insert account
-			stmt := `INSERT INTO accounts (name) VALUES ('test account1');
-					 INSERT INTO accounts (name) VALUES ('test account2');
-					 INSERT INTO accounts (name) VALUES ('test account3');`
+			// Insert accounts
+			stmt := `	INSERT INTO procedure_new_account (name) VALUES ('acc 1');
+						INSERT INTO procedure_new_account (name) VALUES ('acc 2');`
 
 			// Execute
 			_, err := db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't insert accounts;", err)
+				t.Error("couldn't insert a accounts using procedure", err)
 				return
 			}
 
-			// Swap accounts order
-			stmt = `UPDATE accounts SET table_order=1 WHERE id=2;`
+			// Artificialy update account current amount
+			stmt = `UPDATE accounts SET current_amount=100 WHERE id=1;`
 
 			// Execute
 			_, err = db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't update accounts order;", err)
+				t.Error("couldn't update account", err)
 				return
 			}
 
-			var table_orders []int
-
-			// Get rows
-			query := `SELECT table_order FROM accounts ORDER BY id ASC`
-
-			// Get rows
-			rows, err := db.Query(query)
-			if err != nil {
-				t.Error("couldn't get accounts", err)
-				return
-			}
-
-			for rows.Next() {
-				var table_order int
-				err = rows.Scan(&table_order)
-				if err != nil {
-					t.Error("couldn't scan new account")
-					return
-				}
-				table_orders = append(table_orders, table_order)
-			}
-
-			// Check if order is ok
-			if len(table_orders) > 3 {
-				t.Errorf("too many items in table_orsers: %d, expected 3", len(table_orders))
-				return
-			}
-			if table_orders[0] != 2 || table_orders[1] != 1 || table_orders[2] != 3 {
-				t.Errorf("accounts order doesn't match; expected: 2, 1, 3; received: %d, %d, %d", table_orders[0], table_orders[1], table_orders[2])
-				return
-			}
-		},
-
-		// Don't allow account order to go bellow 1 and above the current max number
-		func(t *testing.T) {
-			// Insert account
-			stmt := `INSERT INTO accounts (name) VALUES ('test account1');
-					 INSERT INTO accounts (name) VALUES ('test account2');
-					 INSERT INTO accounts (name) VALUES ('test account3');`
-
-			// Execute
-			_, err := db.Exec(stmt)
-			if err != nil {
-				t.Error("couldn't insert accounts;", err)
-				return
-			}
-
-			// Swap accounts order
-			stmt = `UPDATE accounts SET table_order=0 WHERE id=2;`
+			// Try to delete first account
+			stmt = `DELETE FROM procedure_remove_account WHERE id=1;`
 
 			// Execute
 			_, err = db.Exec(stmt)
 			if err == nil {
-				t.Error("expected error when updating account table_order bellow 1")
+				t.Error("you shouldn't be able to delete an account that is used", err)
+				return
+			}
+			if !strings.HasPrefix(err.Error(), "cant delete an account that is used") {
+				t.Errorf("wrong error received; expected 'cant delete an account that is used'; received %s", err)
 				return
 			}
 
-			// Swap accounts order
-			stmt = `UPDATE accounts SET table_order=4 WHERE id=2;`
+			// Try to delete second account
+			stmt = `DELETE FROM procedure_remove_account WHERE id=2;`
 
 			// Execute
 			_, err = db.Exec(stmt)
-			if err == nil {
-				t.Error("expected error when updating account table_order above current maximum")
+			if err != nil {
+				t.Error("failed to delete an account that is not being used", err)
 				return
 			}
 		},
@@ -300,222 +459,543 @@ func TestMigration(t *testing.T) {
 		 * Categories tests
 		 *
 		 */
-		// When you insert a category it should have the correct table_order
-		func(t *testing.T) {
-			// Insert account
-			stmt := `INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category', 100, 1, 2, 100, 1, 2)`
-
-			// Execute
-			_, err := db.Exec(stmt)
-			if err != nil {
-				t.Error("couldn't insert a category", err)
-				return
-			}
-
-			var table_order int
-
-			// Test category table order
-			query := `SELECT table_order FROM categories WHERE id=1`
-
-			// Get rows
-			row := db.QueryRow(query)
-
-			// Scan row into model
-			err = row.Scan(&table_order)
-			if err != nil {
-				t.Error("error getting category")
-				return
-			}
-
-			// Test table_order
-			if table_order != 1 {
-				t.Errorf("table_order is %d; it has to be 1", table_order)
-			}
-
-			// Add two more categories
-			stmt = `INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category1', 100, 1, 2, 100, 1, 2);
-					INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category2', 100, 1, 2, 100, 1, 2);`
-
-			// Execute
-			_, err = db.Exec(stmt)
-			if err != nil {
-				t.Error("couldn't insert two more categories", err)
-				return
-			}
-
-			// Get rows
-			query = `SELECT table_order FROM categories WHERE id > 1`
-
-			// Get rows
-			rows, err := db.Query(query)
-			if err != nil {
-				t.Error("couldn't get new category", err)
-				return
-			}
-
-			var table_orders []int
-
-			for rows.Next() {
-				err = rows.Scan(&table_order)
-				if err != nil {
-					t.Error("couldn't scan new categories", err)
-					return
-				}
-				table_orders = append(table_orders, table_order)
-			}
-
-			if table_orders[0] != 2 || table_orders[1] != 3 {
-				t.Errorf("table oreder of second and third category is %d, %d; has to be 2, 3", table_orders[0], table_orders[1])
-				return
-			}
-		},
-
-		// When you delete a category, the table order should update
-		func(t *testing.T) {
-			// Insert account
-			stmt := `INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category1', 100, 1, 2, 100, 1, 2);
-					 INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category2', 100, 1, 2, 100, 1, 2);
-					 INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category3', 100, 1, 2, 100, 1, 2);
-					 INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category4', 100, 1, 2, 100, 1, 2);`
-
-			// Execute
-			_, err := db.Exec(stmt)
-			if err != nil {
-				t.Error("couldn't insert categories;", err)
-				return
-			}
-
-			// Delete second account
-			stmt = `DELETE FROM categories WHERE id=2`
-
-			// Execute
-			_, err = db.Exec(stmt)
-			if err != nil {
-				t.Error("couldn't delete the second category", err)
-				return
-			}
-
-			var table_orders []int
-
-			// Get rows
-			query := `SELECT table_order FROM categories ORDER BY id ASC`
-
-			// Get rows
-			rows, err := db.Query(query)
-			if err != nil {
-				t.Error("couldn't get new categories")
-				return
-			}
-
-			for rows.Next() {
-				var table_order int
-				err = rows.Scan(&table_order)
-				if err != nil {
-					t.Error("couldn't scan new categories")
-					return
-				}
-				table_orders = append(table_orders, table_order)
-			}
-
-			// Check if order is ok
-			if len(table_orders) > 3 {
-				t.Errorf("too many items in table_orsers: %d, expected 3", len(table_orders))
-				return
-			}
-			if table_orders[0] != 1 || table_orders[1] != 2 || table_orders[2] != 3 {
-				t.Errorf("categories order doesn't match; expected: 1, 2, 3; received: %d, %d, %d", table_orders[0], table_orders[1], table_orders[2])
-				return
-			}
-		},
-
-		// Can update category order
-		func(t *testing.T) {
-			// Insert account
-			stmt := `INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category1', 100, 1, 2, 100, 1, 2);
-					 INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category2', 100, 1, 2, 100, 1, 2);
-					 INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category3', 100, 1, 2, 100, 1, 2);`
-
-			// Execute
-			_, err := db.Exec(stmt)
-			if err != nil {
-				t.Error("couldn't insert categories;", err)
-				return
-			}
-
-			// Swap categories order
-			stmt = `UPDATE categories SET table_order=1 WHERE id=2;`
-
-			// Execute
-			_, err = db.Exec(stmt)
-			if err != nil {
-				t.Error("couldn't update categories order;", err)
-				return
-			}
-
-			var table_orders []int
-
-			// Get rows
-			query := `SELECT table_order FROM categories ORDER BY id ASC`
-
-			// Get rows
-			rows, err := db.Query(query)
-			if err != nil {
-				t.Error("couldn't get categories", err)
-				return
-			}
-
-			for rows.Next() {
-				var table_order int
-				err = rows.Scan(&table_order)
-				if err != nil {
-					t.Error("couldn't scan new category")
-					return
-				}
-				table_orders = append(table_orders, table_order)
-			}
-
-			// Check if order is ok
-			if len(table_orders) > 3 {
-				t.Errorf("too many items in table_orsers: %d, expected 3", len(table_orders))
-				return
-			}
-			if table_orders[0] != 2 || table_orders[1] != 1 || table_orders[2] != 3 {
-				t.Errorf("caegories order doesn't match; expected: 2, 1, 3; received: %d, %d, %d", table_orders[0], table_orders[1], table_orders[2])
-				return
-			}
-		},
-
-		// Don't allow category order to go bellow 1 and above the current max number
+		// You can insert a category using an insert procedure
 		func(t *testing.T) {
 			// Insert category
-			stmt := `INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category1', 100, 1, 2, 100, 1, 2);
-					 INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category2', 100, 1, 2, 100, 1, 2);
-					 INSERT INTO categories ( name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category3', 100, 1, 2, 100, 1, 2);`
+			stmt := `INSERT INTO procedure_new_category (
+						name,
+						budget_input,
+						input_interval,
+						input_period,
+						spending_limit,
+						spending_interval,
+						spending_period
+					) VALUES (
+						'test category',
+						100,
+						1,
+						1,
+						100,
+						1,
+						1
+					)`
 
 			// Execute
 			_, err := db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't insert categories;", err)
+				t.Error("couldn't insert a category using procedure", err)
 				return
 			}
 
-			// Swap categories order
-			stmt = `UPDATE categories SET table_order=0 WHERE id=2;`
+			// Get categories
+			categories, err := getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Check if all is ok
+			if len(categories) != 1 {
+				t.Errorf("too many categories: %d, expected 1", len(categories))
+				return
+			}
+			if categories[0].Name != "test category" {
+				t.Errorf("wrong category name; expected 'test category'; received %s", categories[0].Name)
+				return
+			}
+
+			// Insert account
+			stmt = `INSERT INTO procedure_new_category (
+						name,
+						budget_input,
+						input_interval,
+						input_period,
+						spending_limit,
+						spending_interval,
+						spending_period
+					) VALUES (
+						'test category 1',
+						100,
+						1,
+						1,
+						100,
+						1,
+						1
+					)`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert an account using procedure", err)
+				return
+			}
+
+			// Get category
+			categories, err = getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// TODO: Add tests for all fields of the categories table
+			// Check if all is ok
+			if len(categories) != 2 {
+				t.Errorf("too many categories: %d, expected 2", len(categories))
+				return
+			}
+			if categories[1].Name != "test category 1" {
+				t.Errorf("wrong category name; expected 'test category 1'; received %s", categories[0].Name)
+				return
+			}
+		},
+
+		// You can rename category using procedure
+		func(t *testing.T) {
+			// Insert category
+			stmt := `INSERT INTO procedure_new_category (
+						name,
+						budget_input,
+						input_interval,
+						input_period,
+						spending_limit,
+						spending_interval,
+						spending_period
+					) VALUES (
+						'test category',
+						100,
+						1,
+						1,
+						100,
+						1,
+						1
+					)`
+
+			// Execute
+			_, err := db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert a category using procedure", err)
+				return
+			}
+
+			// Get categories
+			categories, err := getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Check if name is the same
+			if categories[0].Name != "test category" {
+				t.Errorf("wrong category name; expected 'test category'; received %s", categories[0].Name)
+				return
+			}
+
+			// Rename category
+			stmt = `UPDATE procedure_category_name SET name='test name 2' WHERE id=1`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't update category name using procedure", err)
+				return
+			}
+
+			// Get categories
+			categories, err = getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Check if name is the same
+			if categories[0].Name != "test name 2" {
+				t.Errorf("wrong category name; expected 'test name 2'; received %s", categories[0].Name)
+				return
+			}
+		},
+
+		// You can move category up and down
+		func(t *testing.T) {
+			// Insert category
+			stmt := `INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category1',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);
+			INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category2',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);
+			INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category3',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);`
+
+			// Execute
+			_, err := db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert categories using procedure", err)
+				return
+			}
+
+			testOrder := func(a, b, c int) error {
+
+				// Get categories
+				categories, err := getCategories(t)
+				if err != nil {
+					return err
+				}
+
+				// Check if order is ok
+				if !(categories[0].TableOrder == a && categories[1].TableOrder == b && categories[2].TableOrder == c) {
+					t.Errorf(
+						"error with categories order; expected %d, %d, %d; received %d, %d, %d",
+						a,
+						b,
+						c,
+						categories[0].TableOrder,
+						categories[1].TableOrder,
+						categories[2].TableOrder,
+					)
+					return errors.New("error with category order")
+				}
+
+				return nil
+			}
+
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move first category up
+			stmt = `UPDATE procedure_change_categories_order SET table_order=4 WHERE id=3;`
 
 			// Execute
 			_, err = db.Exec(stmt)
 			if err == nil {
-				t.Error("expected error when updating category table_order bellow 1")
+				t.Error("should not be able to move first category up; expected error; received nil")
+				return
+			}
+			if !strings.HasPrefix(err.Error(), "cant move first category up") {
+				t.Errorf("wrong error; expected 'cant move first category up'; received %s", err)
 				return
 			}
 
-			// Swap category order
-			stmt = `UPDATE category SET table_order=4 WHERE id=2;`
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move last category down
+			stmt = `UPDATE procedure_change_categories_order SET table_order=0 WHERE id=1;`
 
 			// Execute
 			_, err = db.Exec(stmt)
 			if err == nil {
-				t.Error("expected error when updating category table_order above current maximum")
+				t.Error("should not be able to move last category down; expected error; received nil")
+				return
+			}
+			if !strings.HasPrefix(err.Error(), "cant move last category down") {
+				t.Errorf("wrong error; expected 'cant move last category down'; received %s", err.Error())
+				return
+			}
+
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move first category to the middle
+			stmt = `UPDATE procedure_change_categories_order SET table_order=2 WHERE id=1;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't change category table order", err)
+				return
+			}
+
+			// Test order
+			err = testOrder(2, 1, 3)
+			if err != nil {
+				return
+			}
+
+			////////////////////////////////////////////////////////////// Move first category back to the start
+			stmt = `UPDATE procedure_change_categories_order SET table_order=1 WHERE id=1;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't change category table order", err)
+				return
+			}
+
+			// Test order
+			err = testOrder(1, 2, 3)
+			if err != nil {
+				return
+			}
+		},
+
+		// You can delete an unused category and the table_order will update on all others
+		func(t *testing.T) {
+			// Insert category
+			stmt := `INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category1',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);
+			INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category2',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);
+			INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category3',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);
+			INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category4',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);`
+
+			// Execute
+			_, err := db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert categories using procedure", err)
+				return
+			}
+
+			testOrder := func(acc ...[]int) error {
+
+				// Get categories
+				categories, err := getCategories(t)
+				if err != nil {
+					t.Error("couldn't get categories")
+					return err
+				}
+
+				for i, a := range acc {
+
+					// Check if order is ok
+					if categories[i].TableOrder != a[1] || categories[i].ID != a[0] {
+						t.Errorf(
+							"error with categories order; expected %d, %d; received %d, %d",
+							a[0],
+							a[1],
+							categories[i].ID,
+							categories[i].TableOrder,
+						)
+						return errors.New("error with category order")
+					}
+				}
+
+				return nil
+			}
+
+			err = testOrder([]int{1, 1}, []int{2, 2}, []int{3, 3}, []int{4, 4})
+			if err != nil {
+				return
+			}
+
+			// Delete second category
+			stmt = `DELETE FROM procedure_remove_category WHERE id=2;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't delete categories using procedure", err)
+				return
+			}
+
+			// Test order
+			err = testOrder([]int{1, 1}, []int{3, 2}, []int{4, 3})
+			if err != nil {
+				return
+			}
+
+			// Delete third category
+			stmt = `DELETE FROM procedure_remove_category WHERE id=3;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't delete categories using procedure", err)
+				return
+			}
+
+			// Test order
+			err = testOrder([]int{1, 1}, []int{4, 2})
+			if err != nil {
+				return
+			}
+		},
+
+		// You can't delte a cateogory that is being used. Category is being used when it's referenced by expenses or when it has funds
+		func(t *testing.T) {
+			// Insert category
+			stmt := `INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category1',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);
+			INSERT INTO procedure_new_category (
+				name,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit,
+				spending_interval,
+				spending_period
+			) VALUES (
+				'test category2',
+				100,
+				1,
+				1,
+				100,
+				1,
+				1
+			);`
+
+			// Execute
+			_, err := db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't insert categories using procedure", err)
+				return
+			}
+
+			// Artificialy update category current amount
+			stmt = `UPDATE categories SET initial_amount=100 WHERE id=1;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't update category", err)
+				return
+			}
+
+			// Try to delete first category
+			stmt = `DELETE FROM procedure_remove_category WHERE id=1;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err == nil {
+				t.Error("you shouldn't be able to delete a category that is used", err)
+				return
+			}
+			if !strings.HasPrefix(err.Error(), "cant delete a category that is used") {
+				t.Errorf("wrong error received; expected 'cant delete a category that is used'; received %s", err)
+				return
+			}
+
+			// Try to delete second category
+			stmt = `DELETE FROM procedure_remove_category WHERE id=2;`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("failed to delete an category that is not being used", err)
 				return
 			}
 		},
@@ -524,6 +1004,103 @@ func TestMigration(t *testing.T) {
 		 * Test Expense interactions
 		 *
 		 */
+		// You can insert expenses, tags and expense tags, using a procedure
+		func(t *testing.T) {
+			// Run init
+			err := beforeExpenseTest(t)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Insert an expense
+			stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);`
+
+			// Execute
+			_, err = db.Exec(stmt, time.Now())
+			if err != nil {
+				t.Error("couldn't insert expense using procedure", err)
+				return
+			}
+
+			// Get expenses
+			expenses, err := getExpenses(t)
+			if err != nil {
+				return
+			}
+
+			if len(expenses) != 1 {
+				t.Errorf("too many expenses; expected 1; received %d", len(expenses))
+				return
+			}
+
+			// Insert new tag
+			stmt = `INSERT INTO procedure_insert_tag (name) VALUES ('test new tag');`
+
+			// Execute
+			_, err = db.Exec(stmt, time.Now())
+			if err != nil {
+				t.Error("couldn't insert tag using procedure", err)
+				return
+			}
+
+			// Get tags
+			tags, err := getTags(t)
+			if err != nil {
+				return
+			}
+
+			// Check tags length
+			if len(tags) != 3 {
+				t.Errorf("too many tags; expected 3; received %d", len(tags))
+				return
+			}
+
+			// Insert same tag again (should not throw an error) along with new tags
+			stmt = `INSERT INTO procedure_insert_tag (name) VALUES ('test new tag'), ('test new 1'), ('test new 2');`
+
+			// Execute
+			_, err = db.Exec(stmt, time.Now())
+			if err != nil {
+				t.Error("couldn't insert existing tag using procedure", err)
+				return
+			}
+
+			// Get tags
+			tags, err = getTags(t)
+			if err != nil {
+				return
+			}
+
+			// Check tags length
+			if len(tags) != 5 {
+				t.Errorf("too many tags; expected 5; received %d", len(tags))
+				return
+			}
+
+			// Insert expense_tag
+			stmt = `INSERT iNTO procedure_link_tag_to_expense (expense_id, tag_id) VALUES (1, 1)`
+
+			// Execute
+			_, err = db.Exec(stmt, time.Now())
+			if err != nil {
+				t.Error("couldn't insert existing tag using procedure", err)
+				return
+			}
+
+			// Get relations
+			rel, err := getExpenseTags(t)
+			if err != nil {
+				return
+			}
+
+			// Check length
+			if len(rel) != 1 {
+				t.Errorf("too many expense-tag relations; expected 1; received %d", len(rel))
+				return
+			}
+		},
+
 		// When you add an Expense with tag relations it changes the related tags usage_count value
 		// You can't delete tags, that are used
 		func(t *testing.T) {
@@ -534,27 +1111,10 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			// Get current tag values
-			query := `SELECT name, usage_count FROM tags`
-
-			// Get tags
-			var initialTags []models.Tag
-
-			// Get rows
-			rows, err := db.Query(query)
+			// Get initial tags
+			initialTags, err := getTags(t)
 			if err != nil {
-				t.Error("couldn't get tags", err)
 				return
-			}
-
-			for rows.Next() {
-				var tag models.Tag
-				err = rows.Scan(&tag.Name, &tag.UsageCount)
-				if err != nil {
-					t.Error("couldn't scan tag", err)
-					return
-				}
-				initialTags = append(initialTags, tag)
 			}
 
 			// Check tags initial usage_count
@@ -567,34 +1127,20 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add expense with relation to tag 1
-			stmt := `INSERT INTO expenses (amount, from_account, from_category) VALUES (10, 1, 1);
-					 INSERT INTO expense_tags (expense_id, tag_id) VALUES (1, 1);`
+			stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);
+					 INSERT iNTO procedure_link_tag_to_expense (expense_id, tag_id) VALUES (1, 1)`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err != nil {
 				t.Error("couldn't insert expense and expense_tags;", err)
 				return
 			}
 
 			// Get tags
-			var tags1 []models.Tag
-
-			// Get rows
-			rows, err = db.Query(query)
+			tags1, err := getTags(t)
 			if err != nil {
-				t.Error("couldn't get tags", err)
 				return
-			}
-
-			for rows.Next() {
-				var tag models.Tag
-				err = rows.Scan(&tag.Name, &tag.UsageCount)
-				if err != nil {
-					t.Error("couldn't scan tag", err)
-					return
-				}
-				tags1 = append(tags1, tag)
 			}
 
 			// Check tags initial usage_count
@@ -603,39 +1149,26 @@ func TestMigration(t *testing.T) {
 				return
 			}
 			if tags1[0].UsageCount != 1 || tags1[1].UsageCount != 0 {
-				t.Errorf("unexpected tags initial usage_count; recevied: %d, %d; expected 1, 0", tags1[0].UsageCount, tags1[1].UsageCount)
+				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 1, 0", tags1[0].UsageCount, tags1[1].UsageCount)
+				return
 			}
 
 			// Add expense with relation to tag 1 and 2
-			stmt = `INSERT INTO expenses (amount, from_account, from_category) VALUES (10, 1, 1);
-					 INSERT INTO expense_tags (expense_id, tag_id) VALUES (2, 1);
-					 INSERT INTO expense_tags (expense_id, tag_id) VALUES (2, 2);`
+			stmt = `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);
+					INSERT iNTO procedure_link_tag_to_expense (expense_id, tag_id) VALUES (2, 1);
+					INSERT iNTO procedure_link_tag_to_expense (expense_id, tag_id) VALUES (2, 2);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err != nil {
 				t.Error("couldn't insert expense and expense_tags;", err)
 				return
 			}
 
 			// Get tags
-			var tags2 []models.Tag
-
-			// Get rows
-			rows, err = db.Query(query)
+			tags2, err := getTags(t)
 			if err != nil {
-				t.Error("couldn't get tags", err)
 				return
-			}
-
-			for rows.Next() {
-				var tag models.Tag
-				err = rows.Scan(&tag.Name, &tag.UsageCount)
-				if err != nil {
-					t.Error("couldn't scan tag", err)
-					return
-				}
-				tags2 = append(tags2, tag)
 			}
 
 			// Check tags initial usage_count
@@ -644,11 +1177,12 @@ func TestMigration(t *testing.T) {
 				return
 			}
 			if tags2[0].UsageCount != 2 || tags2[1].UsageCount != 1 {
-				t.Errorf("unexpected tags initial usage_count; recevied: %d, %d; expected 2, 1", tags2[0].UsageCount, tags2[1].UsageCount)
+				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 2, 1", tags2[0].UsageCount, tags2[1].UsageCount)
+				return
 			}
 
 			// Delete from expense tags
-			stmt = `DELETE FROM expense_tags WHERE id=3`
+			stmt = `DELETE FROM procedure_unlink_tag_from_expense WHERE id=3`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -658,23 +1192,9 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Get tags
-			var tags3 []models.Tag
-
-			// Get rows
-			rows, err = db.Query(query)
+			tags3, err := getTags(t)
 			if err != nil {
-				t.Error("couldn't get tags", err)
 				return
-			}
-
-			for rows.Next() {
-				var tag models.Tag
-				err = rows.Scan(&tag.Name, &tag.UsageCount)
-				if err != nil {
-					t.Error("couldn't scan tag", err)
-					return
-				}
-				tags3 = append(tags3, tag)
 			}
 
 			// Check tags initial usage_count
@@ -683,12 +1203,12 @@ func TestMigration(t *testing.T) {
 				return
 			}
 			if tags3[0].UsageCount != 2 || tags3[1].UsageCount != 0 {
-				t.Errorf("unexpected tags initial usage_count; recevied: %d, %d; expected 2, 0", tags3[0].UsageCount, tags3[1].UsageCount)
+				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 2, 0", tags3[0].UsageCount, tags3[1].UsageCount)
 				return
 			}
 
 			// Remove expense
-			stmt = `DELETE FROM expenses WHERE id=1`
+			stmt = `DELETE FROM procedure_remove_expense WHERE id=1`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -698,37 +1218,23 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Get tags
-			var tags4 []models.Tag
-
-			// Get rows
-			rows, err = db.Query(query)
+			tags4, err := getTags(t)
 			if err != nil {
-				t.Error("couldn't get tags", err)
 				return
 			}
 
-			for rows.Next() {
-				var tag models.Tag
-				err = rows.Scan(&tag.Name, &tag.UsageCount)
-				if err != nil {
-					t.Error("couldn't scan tag", err)
-					return
-				}
-				tags4 = append(tags4, tag)
-			}
-
-			// Check tags initial usage_count
+			// Check tags usage_count
 			if len(tags4) > 2 {
 				t.Errorf("too many tags: %d; expected 2", len(tags4))
 				return
 			}
 			if tags4[0].UsageCount != 1 || tags4[1].UsageCount != 0 {
-				t.Errorf("unexpected tags initial usage_count; recevied: %d, %d; expected 1, 0", tags4[0].UsageCount, tags4[1].UsageCount)
+				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 1, 0", tags4[0].UsageCount, tags4[1].UsageCount)
 				return
 			}
 
 			// Delete second tag
-			stmt = `DELETE FROM tags WHERE id=2`
+			stmt = `DELETE FROM procedure_remove_tag WHERE id=2`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -738,33 +1244,19 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Get tags
-			var tags5 []models.Tag
-
-			// Get rows
-			rows, err = db.Query(query)
+			tags5, err := getTags(t)
 			if err != nil {
-				t.Error("couldn't get tags", err)
 				return
 			}
 
-			for rows.Next() {
-				var tag models.Tag
-				err = rows.Scan(&tag.Name, &tag.UsageCount)
-				if err != nil {
-					t.Error("couldn't scan tag", err)
-					return
-				}
-				tags5 = append(tags5, tag)
-			}
-
-			// Check tags initial usage_count
+			// Check tags usage_count
 			if len(tags5) > 1 {
 				t.Errorf("too many tags: %d; expected 1", len(tags5))
 				return
 			}
 
 			// Delete first tag
-			stmt = `DELETE FROM tags WHERE id=1`
+			stmt = `DELETE FROM procedure_remove_tag WHERE id=1`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -784,44 +1276,16 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add expense
-			stmt := `INSERT INTO expenses (amount, from_account, from_category) VALUES (10, 1, 1);`
+			stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err != nil {
 				t.Error("couldn't insert expense;", err)
 				return
 			}
 
-			getAccounts := func() ([]models.Account, error) {
-
-				// Get accounts
-				query := `SELECT current_amount FROM accounts WHERE id=1;`
-
-				// Set variable
-				var accounts []models.Account
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get account", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var account models.Account
-					err = rows.Scan(&account.CurrentAmount)
-					if err != nil {
-						t.Error("couldn't scan account", err)
-						return nil, err
-					}
-					accounts = append(accounts, account)
-				}
-
-				return accounts, nil
-			}
-
-			accounts, err := getAccounts()
+			accounts, err := getAccounts(t)
 			if err != nil {
 				return
 			}
@@ -832,34 +1296,7 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			getCats := func() ([]models.Category, error) {
-				// Get categories
-				query := `SELECT current_amount FROM categories WHERE id=1;`
-
-				// Set variable
-				var categories []models.Category
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get categories", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var category models.Category
-					err = rows.Scan(&category.CurrentAmount)
-					if err != nil {
-						t.Error("couldn't scan category", err)
-						return nil, err
-					}
-					categories = append(categories, category)
-				}
-
-				return categories, nil
-			}
-
-			categories, err := getCats()
+			categories, err := getCategories(t)
 			if err != nil {
 				return
 			}
@@ -871,22 +1308,22 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add expenses
-			stmt = `INSERT INTO expenses (amount, from_account, from_category) VALUES (20, 1, 1);
-					INSERT INTO expenses (amount, from_account, from_category) VALUES (30, 1, 2);`
+			stmt = `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (20, $1, 1, 1);
+					INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (30, $2, 1, 2);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now(), time.Now())
 			if err != nil {
-				t.Error("couldn't insert expense;", err)
+				t.Error("couldn't insert expenses;", err)
 				return
 			}
 
 			// Get accounts and categories
-			accounts, err = getAccounts()
+			accounts, err = getAccounts(t)
 			if err != nil {
 				return
 			}
-			categories, err = getCats()
+			categories, err = getCategories(t)
 			if err != nil {
 				return
 			}
@@ -914,20 +1351,20 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add expense
-			stmt := `INSERT INTO expenses (amount, from_account, from_category) VALUES (150, 1, 2);`
+			stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (150, $1, 1, 2);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err == nil {
 				t.Error("expected an error; shouldn't be able to reduce account current amount bellow zero", err)
 				return
 			}
 
 			// Add expense
-			stmt = `INSERT INTO expenses (amount, from_account, from_category) VALUES (150, 2, 1);`
+			stmt = `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (150, $1, 2, 1);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err == nil {
 				t.Error("expected an error; shouldn't be able to reduce category current amount bellow zero", err)
 				return
@@ -944,18 +1381,18 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add expense
-			stmt := `INSERT INTO expenses (amount, from_account, from_category) VALUES (10, 1, 1);
-					 INSERT INTO expenses (amount, from_account, from_category) VALUES (20, 1, 1);`
+			stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);
+					 INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (20, $2, 1, 1);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now(), time.Now())
 			if err != nil {
-				t.Error("couldn't insert new expenseS", err)
+				t.Error("couldn't insert new expenses", err)
 				return
 			}
 
 			// Delete expense
-			stmt = `DELETE FROM expenses WHERE ID=2`
+			stmt = `DELETE FROM procedure_remove_expense WHERE ID=2`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -964,36 +1401,7 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			// Get accounts
-			getAccounts := func() ([]models.Account, error) {
-
-				// Get accounts
-				query := `SELECT current_amount FROM accounts WHERE id=1;`
-
-				// Set variable
-				var accounts []models.Account
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get account", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var account models.Account
-					err = rows.Scan(&account.CurrentAmount)
-					if err != nil {
-						t.Error("couldn't scan account", err)
-						return nil, err
-					}
-					accounts = append(accounts, account)
-				}
-
-				return accounts, nil
-			}
-
-			accounts, err := getAccounts()
+			accounts, err := getAccounts(t)
 			if err != nil {
 				return
 			}
@@ -1004,34 +1412,7 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			getCats := func() ([]models.Category, error) {
-				// Get categories
-				query := `SELECT current_amount FROM categories WHERE id=1;`
-
-				// Set variable
-				var categories []models.Category
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get categories", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var category models.Category
-					err = rows.Scan(&category.CurrentAmount)
-					if err != nil {
-						t.Error("couldn't scan category", err)
-						return nil, err
-					}
-					categories = append(categories, category)
-				}
-
-				return categories, nil
-			}
-
-			categories, err := getCats()
+			categories, err := getCategories(t)
 			if err != nil {
 				return
 			}
@@ -1053,45 +1434,16 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add expense
-			stmt := `INSERT INTO expenses (amount, from_account, from_category) VALUES (10, 1, 1);`
+			stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err != nil {
-				t.Error("couldn't insert new expenseS", err)
+				t.Error("couldn't insert new expense", err)
 				return
 			}
 
-			// Get accounts
-			getAccounts := func() ([]models.Account, error) {
-
-				// Get accounts
-				query := `SELECT current_amount, usage_count FROM accounts`
-
-				// Set variable
-				var accounts []models.Account
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get account", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var account models.Account
-					err = rows.Scan(&account.CurrentAmount, &account.UsageCount)
-					if err != nil {
-						t.Error("couldn't scan account", err)
-						return nil, err
-					}
-					accounts = append(accounts, account)
-				}
-
-				return accounts, nil
-			}
-
-			accounts, err := getAccounts()
+			accounts, err := getAccounts(t)
 			if err != nil {
 				return
 			}
@@ -1107,7 +1459,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Update expense
-			stmt = `UPDATE expenses SET amount = 20 WHERE id=1`
+			stmt = `UPDATE procedure_update_expense SET amount = 20 WHERE id=1`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -1116,7 +1468,7 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			accounts, err = getAccounts()
+			accounts, err = getAccounts(t)
 			if err != nil {
 				return
 			}
@@ -1131,34 +1483,7 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			getCats := func() ([]models.Category, error) {
-				// Get categories
-				query := `SELECT current_amount FROM categories WHERE id=1;`
-
-				// Set variable
-				var categories []models.Category
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get categories", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var category models.Category
-					err = rows.Scan(&category.CurrentAmount)
-					if err != nil {
-						t.Error("couldn't scan category", err)
-						return nil, err
-					}
-					categories = append(categories, category)
-				}
-
-				return categories, nil
-			}
-
-			categories, err := getCats()
+			categories, err := getCategories(t)
 			if err != nil {
 				return
 			}
@@ -1180,45 +1505,16 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add expense
-			stmt := `INSERT INTO expenses (amount, from_account, from_category) VALUES (10, 1, 1);`
+			stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err != nil {
 				t.Error("couldn't insert new expense", err)
 				return
 			}
 
-			// Get accounts
-			getAccounts := func() ([]models.Account, error) {
-
-				// Get accounts
-				query := `SELECT current_amount, usage_count FROM accounts`
-
-				// Set variable
-				var accounts []models.Account
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get account", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var account models.Account
-					err = rows.Scan(&account.CurrentAmount, &account.UsageCount)
-					if err != nil {
-						t.Error("couldn't scan account", err)
-						return nil, err
-					}
-					accounts = append(accounts, account)
-				}
-
-				return accounts, nil
-			}
-
-			accounts, err := getAccounts()
+			accounts, err := getAccounts(t)
 			if err != nil {
 				return
 			}
@@ -1234,7 +1530,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Update expense
-			stmt = `UPDATE expenses SET from_account = 2, from_category = 2 WHERE id=1`
+			stmt = `UPDATE procedure_update_expense SET from_account = 2, from_category = 2 WHERE id=1`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -1243,7 +1539,7 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			accounts, err = getAccounts()
+			accounts, err = getAccounts(t)
 			if err != nil {
 				return
 			}
@@ -1258,34 +1554,7 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			getCats := func() ([]models.Category, error) {
-				// Get categories
-				query := `SELECT current_amount FROM categories WHERE id=1;`
-
-				// Set variable
-				var categories []models.Category
-
-				// Get rows
-				rows, err := db.Query(query)
-				if err != nil {
-					t.Error("couldn't get categories", err)
-					return nil, err
-				}
-
-				for rows.Next() {
-					var category models.Category
-					err = rows.Scan(&category.CurrentAmount)
-					if err != nil {
-						t.Error("couldn't scan category", err)
-						return nil, err
-					}
-					categories = append(categories, category)
-				}
-
-				return categories, nil
-			}
-
-			categories, err := getCats()
+			categories, err := getCategories(t)
 			if err != nil {
 				return
 			}
@@ -1301,14 +1570,66 @@ func TestMigration(t *testing.T) {
 		 * Test Data Pipelines
 		 *
 		 */
-		// Test category input period reset procedure
+		// Test free funds procedure
+		func(t *testing.T) {
+			// Insert accounts and categories
+			err := beforeExpenseTest(t)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Add free funds
+			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (100, 1)`
+
+			// Execute
+			_, err = db.Exec(stmt, time.Now())
+			if err != nil {
+				t.Error("couldn't add free funds;", err)
+				return
+			}
+
+			// Get accounts
+			accounts, err := getAccounts(t)
+			if err != nil {
+				return
+			}
+
+			// Check amount in account 1
+			if accounts[0].CurrentAmount != 200 {
+				t.Errorf("account current amount is wrong; expected 200; received: %f", accounts[0].CurrentAmount)
+				return
+			}
+
+			// Get user
+			user, err := getUser(t)
+			if err != nil {
+				return
+			}
+
+			// Check amount in account 1
+			if user.FreeFunds != 100 {
+				t.Errorf("user free funds amount is wrong; expected 100; received: %f", user.FreeFunds)
+				return
+			}
+
+			// Try to drop free funds bellow zero
+			stmt = `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (-150, 1)`
+
+			// Execute
+			_, err = db.Exec(stmt, time.Now())
+			if err == nil {
+				t.Error("expected error; should'n be able to drop free funds bellow zero")
+				return
+			}
+		},
 	)
 }
 
 func beforeExpenseTest(t *testing.T) error {
 	// Add accounts
-	stmt := `INSERT INTO accounts (name) VALUES ('test account1');
-			 INSERT INTO accounts (name) VALUES ('test account2');`
+	stmt := `INSERT INTO accounts (name, current_amount, table_order) VALUES ('test account1', 100, 1);
+			 INSERT INTO accounts (name, current_amount, table_order) VALUES ('test account2', 200, 2);`
 
 	// Execute
 	_, err := db.Exec(stmt)
@@ -1318,8 +1639,8 @@ func beforeExpenseTest(t *testing.T) error {
 	}
 
 	// Add categories
-	stmt = `INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category1', 100, 1, 2, 100, 1, 2);
-			INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_interval, spending_period) VALUES ('test category2', 100, 1, 2, 100, 1, 2);`
+	stmt = `INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, spending_interval, spending_period, table_order, initial_amount, current_amount) VALUES ('test category1', 100, 1, 2, 100, 100, 1, 2, 1, 100, 100);
+			INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, spending_interval, spending_period, table_order, initial_amount, current_amount) VALUES ('test category2', 100, 1, 2, 100, 100, 1, 2, 2, 200, 200);`
 
 	// Execute
 	_, err = db.Exec(stmt)
@@ -1329,17 +1650,17 @@ func beforeExpenseTest(t *testing.T) error {
 	}
 
 	// Add money to categories and accounts
-	stmt = `UPDATE categories SET initial_amount = 100 WHERE id=1;
-			UPDATE categories SET initial_amount = 200 WHERE id=2;
-			UPDATE accounts	  SET initial_amount = 100 WHERE id=1;
-			UPDATE accounts	  SET initial_amount = 200 WHERE id=2;`
+	// stmt = `UPDATE categories SET initial_amount = 100 WHERE id=1;
+	// 		UPDATE categories SET initial_amount = 200 WHERE id=2;
+	// 		UPDATE accounts	  SET initial_amount = 100 WHERE id=1;
+	// 		UPDATE accounts	  SET initial_amount = 200 WHERE id=2;`
 
 	// Execute
-	_, err = db.Exec(stmt)
-	if err != nil {
-		t.Error("couldn't insert categories;", err)
-		return err
-	}
+	// _, err = db.Exec(stmt)
+	// if err != nil {
+	// 	t.Error("couldn't insert categories;", err)
+	// 	return err
+	// }
 
 	// Add tags
 	stmt = `INSERT INTO tags (name) VALUES ('tag 1');
@@ -1348,9 +1669,248 @@ func beforeExpenseTest(t *testing.T) error {
 	// Execute
 	_, err = db.Exec(stmt)
 	if err != nil {
-		t.Error("couldn't insert categories;", err)
+		t.Error("couldn't insert tags;", err)
 		return err
 	}
 
 	return nil
+}
+
+func getUser(t *testing.T) (models.User, error) {
+	// Get user
+	query := `SELECT id, email, password, db_version, free_funds, created_at, updated_at FROM user;`
+
+	// Get rows
+	row := db.QueryRow(query)
+
+	var user models.User
+
+	err := row.Scan(
+		&user.ID,
+		&user.Email,
+		&user.Password,
+		&user.DBVersion,
+		&user.FreeFunds,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		t.Error("couldn't get user", err)
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
+func getAccounts(t *testing.T) ([]models.Account, error) {
+	// Get accounts
+	query := `SELECT id, name, current_amount, usage_count, table_order, created_at, updated_at FROM accounts;`
+
+	// Get rows
+	rows, err := db.Query(query)
+	if err != nil {
+		t.Error("couldn't get accounts", err)
+		return nil, err
+	}
+
+	var accounts []models.Account
+
+	for rows.Next() {
+		var account models.Account
+
+		err = rows.Scan(
+			&account.ID,
+			&account.Name,
+			&account.CurrentAmount,
+			&account.UsageCount,
+			&account.TableOrder,
+			&account.CreatedAt,
+			&account.UpdatedAt,
+		)
+		if err != nil {
+			t.Error("couldn't scan accounts", err)
+			return nil, err
+		}
+		accounts = append(accounts, account)
+	}
+
+	return accounts, nil
+}
+
+func getCategories(t *testing.T) ([]models.Category, error) {
+	// Get categories
+	query := `SELECT
+		id,
+		name,
+		budget_input,
+		last_input_date,
+		concat(input_interval, input_period) as input_interval,
+		spending_limit,
+		spending_left,
+		last_spending_reset,
+		concat(spending_interval, spending_period) as spending_interval,
+		initial_amount,
+		current_amount,
+		table_order,
+		created_at,
+		updated_at
+	FROM categories;`
+
+	// Get rows
+	rows, err := db.Query(query)
+	if err != nil {
+		t.Error("couldn't get categories", err)
+		return nil, err
+	}
+
+	var categories []models.Category
+
+	for rows.Next() {
+		var category models.Category
+
+		err = rows.Scan(
+			&category.ID,
+			&category.Name,
+			&category.BudgetInput,
+			&category.LastInputDate,
+			&category.InputInterval,
+			&category.SpendingLimit,
+			&category.SpendingLeft,
+			&category.LastSpendingReset,
+			&category.SpendingInterval,
+			&category.InitialAmount,
+			&category.CurrentAmount,
+			&category.TableOrder,
+			&category.CreatedAt,
+			&category.UpdatedAt,
+		)
+		if err != nil {
+			t.Error("couldn't scan category", err)
+			return nil, err
+		}
+		categories = append(categories, category)
+	}
+
+	return categories, nil
+}
+
+func getExpenses(t *testing.T) ([]models.Expense, error) {
+	// Get expenses
+	query := `SELECT
+		id,
+		amount,
+		date,
+		from_account,
+		from_category,
+		created_at,
+		updated_at
+	FROM expenses;`
+
+	// Get rows
+	rows, err := db.Query(query)
+	if err != nil {
+		t.Error("couldn't get expenses", err)
+		return nil, err
+	}
+
+	var expenses []models.Expense
+
+	for rows.Next() {
+		var expense models.Expense
+
+		err = rows.Scan(
+			&expense.ID,
+			&expense.Amount,
+			&expense.Date,
+			&expense.FromAccountId,
+			&expense.FromCategoryId,
+			&expense.CreatedAt,
+			&expense.UpdatedAt,
+		)
+		if err != nil {
+			t.Error("couldn't scan category", err)
+			return nil, err
+		}
+		expenses = append(expenses, expense)
+	}
+
+	return expenses, nil
+}
+
+func getTags(t *testing.T) ([]models.Tag, error) {
+	// Get tags
+	query := `SELECT
+		id,
+		name,
+		usage_count,
+		created_at,
+		updated_at
+	FROM tags;`
+
+	// Get rows
+	rows, err := db.Query(query)
+	if err != nil {
+		t.Error("couldn't get tags", err)
+		return nil, err
+	}
+
+	var tags []models.Tag
+
+	for rows.Next() {
+		var tag models.Tag
+
+		err = rows.Scan(
+			&tag.ID,
+			&tag.Name,
+			&tag.UsageCount,
+			&tag.CreatedAt,
+			&tag.UpdatedAt,
+		)
+		if err != nil {
+			t.Error("couldn't scan tag", err)
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+
+	return tags, nil
+}
+
+func getExpenseTags(t *testing.T) ([]models.ExpenseToTagRealtion, error) {
+	// Get expense tags
+	query := `SELECT
+		id,
+		expense_id,
+		tag_id,
+		created_at,
+		updated_at
+	FROM expense_tags;`
+
+	// Get rows
+	rows, err := db.Query(query)
+	if err != nil {
+		t.Error("couldn't get expense tags", err)
+		return nil, err
+	}
+
+	var expenseTags []models.ExpenseToTagRealtion
+
+	for rows.Next() {
+		var expenseTag models.ExpenseToTagRealtion
+
+		err = rows.Scan(
+			&expenseTag.ID,
+			&expenseTag.ExpenseId,
+			&expenseTag.TagId,
+			&expenseTag.CreatedAt,
+			&expenseTag.UpdatedAt,
+		)
+		if err != nil {
+			t.Error("couldn't scan tag", err)
+			return nil, err
+		}
+		expenseTags = append(expenseTags, expenseTag)
+	}
+
+	return expenseTags, nil
 }

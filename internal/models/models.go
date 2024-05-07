@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 // NewExpense model
 type NewExpense struct {
@@ -15,23 +18,23 @@ type User struct {
 	Email     string
 	Password  string
 	DBVersion int
-	// CreatedAt time.Time
-	// UpdatedAt time.Time
+	FreeFunds float64
+	CreatedAt time.Time
+	UpdatedAt sql.NullTime
 }
 
 // Expenses
 type Expense struct {
-	ID          int
-	Amount      float64
-	Date        time.Time
-	Tags        []Tag
-	FromAccount Account
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	// CategoryID int
-	// Category   Category
-	// AccountID  int
-	// Account    Amount
+	ID             int
+	Amount         float64
+	Date           time.Time
+	Tags           []Tag
+	FromAccountId  int
+	FromAccount    Account
+	FromCategoryId int
+	FromCategory   Category
+	CreatedAt      time.Time
+	UpdatedAt      sql.NullTime
 }
 
 // Tags
@@ -40,19 +43,30 @@ type Tag struct {
 	Name       string
 	UsageCount int
 	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	UpdatedAt  sql.NullTime
+}
+
+// Expense-Tag relation
+type ExpenseToTagRealtion struct {
+	ID        int
+	ExpenseId int
+	TagId     int
+	CreatedAt time.Time
+	UpdatedAt sql.NullTime
 }
 
 // Accounts
 type Account struct {
-	ID            int
+	ID int
+
 	Name          string
-	InitialAmount float64
 	CurrentAmount float64
-	UsageCount    int
-	TableOrder    int
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+
+	UsageCount int
+	TableOrder int
+
+	CreatedAt time.Time
+	UpdatedAt sql.NullTime
 }
 
 // Categories
@@ -61,10 +75,12 @@ type Category struct {
 
 	Name string
 
-	BudgetInput       float64
-	LastInputDate     time.Time
-	InputInterval     time.Duration
+	BudgetInput   float64
+	LastInputDate time.Time
+	InputInterval time.Duration
+
 	SpendingLimit     float64
+	SpendingLeft      float64
 	LastSpendingReset time.Time
 	SpendingInterval  time.Duration
 
@@ -73,5 +89,5 @@ type Category struct {
 
 	TableOrder int
 	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	UpdatedAt  sql.NullTime
 }
