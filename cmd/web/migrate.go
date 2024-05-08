@@ -61,6 +61,14 @@ func Migrate(dbName string) error {
 						current_amount = current_amount + new.amount,
 						updated_at = datetime('now')
 					WHERE id = new.to_account;
+
+					INSERT INTO accounts_input_log (
+						account,
+						amount
+					) VALUES (
+						new.to_account,
+						new.amount
+					);
 				END;`
 
 	// Execute query
@@ -90,11 +98,14 @@ func Migrate(dbName string) error {
 		date			DATETIME	NOT NULL		DEFAULT CURRENT_TIMESTAMP,
 
 		from_account	INTEGER		NOT NULL		REFERENCES accounts (id)
+														ON UPDATE CASCADE
 														ON DELETE RESTRICT,
 		from_category	INTEGER		NOT NULL		REFERENCES categories (id)
+														ON UPDATE CASCADE
 														ON DELETE RESTRICT,
 
 		from_period		INTEGER		DEFAULT null	REFERENCES archived_periods (id)
+														ON UPDATE CASCADE
 														ON DELETE RESTRICT,
 		
 		created_at		DATETIME	NOT NULL		DEFAULT CURRENT_TIMESTAMP,
@@ -231,7 +242,7 @@ func Migrate(dbName string) error {
 					from_account = 	COALESCE(new.from_account, old.from_account),
 					from_category =	COALESCE(new.from_category, old.from_category),
 					updated_at = datetime('now')
-				WHERE id = new.id;
+				WHERE id = old.id;
 			END;
 			
 			CREATE TRIGGER triggers__procedure_update_expense__amount_changes_account_stays_the_same
@@ -487,6 +498,30 @@ func Migrate(dbName string) error {
 		return err
 	}
 
+	/*
+	 * Accounts input log
+	 *
+	 * When account current_amount increases, log changes
+	 */
+	stmt = `CREATE TABLE accounts_input_log (
+				id				INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+
+				account			INTEGER		NOT NULL	REFERENCES accounts (id)
+															ON UPDATE CASCADE
+															ON DELETE CASCADE,
+				amount			NUMERIC		NOT NULL,
+
+				created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
+				updated_at		DATETIME				DEFAULT null
+			);`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
 	/**
 	 **
 	 ** Account procedures
@@ -530,14 +565,12 @@ func Migrate(dbName string) error {
 			CREATE TRIGGER trigger__procedure_account_name__update_account_name
 				INSTEAD OF UPDATE
 				ON procedure_account_name
-				WHEN
-					old.name <> new.name AND
-					old.id = new.id
+				WHEN old.name <> new.name
 			BEGIN
 				UPDATE accounts SET
 					name=new.name,
 					updated_at = datetime('now')
-				WHERE id=new.id;
+				WHERE id=old.id;
 			END;`
 
 	// Execute query
@@ -559,9 +592,7 @@ func Migrate(dbName string) error {
 			CREATE TRIGGER trigger__procedure_change_accounts_order__swap_table_orders
 				INSTEAD OF UPDATE
 				ON procedure_change_accounts_order
-				WHEN
-					old.table_order <> new.table_order AND
-					old.id = new.id
+				WHEN old.table_order <> new.table_order
 			BEGIN
 				SELECT
 					CASE
@@ -579,7 +610,7 @@ func Migrate(dbName string) error {
 				UPDATE accounts SET
 					table_order = new.table_order,
 					updated_at = datetime('now')
-				WHERE id = new.id;
+				WHERE id = old.id;
 			END;`
 
 	// Execute query
@@ -659,6 +690,7 @@ func Migrate(dbName string) error {
 		last_input_date			DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		input_interval			INTEGER		NOT NULL		CHECK (input_interval > 0),
 		input_period			INTEGER		NOT NULL	REFERENCES time_periods (id)
+															ON UPDATE CASCADE
 															ON DELETE RESTRICT,
 
 		spending_limit			NUMERIC		NOT NULL		CHECK (spending_limit >= 0),
@@ -741,14 +773,12 @@ func Migrate(dbName string) error {
 			CREATE TRIGGER trigger__procedure_category_name__update_name
 				INSTEAD OF UPDATE
 				ON procedure_category_name
-				WHEN
-					old.name <> new.name AND
-					old.id = new.id
+				WHEN old.name <> new.name
 				BEGIN
 					UPDATE categories SET
 						name = new.name,
 						updated_at = datetime('now')
-					WHERE id = new.id;
+					WHERE id = old.id;
 				END;`
 
 	// Execute query
@@ -770,9 +800,7 @@ func Migrate(dbName string) error {
 			CREATE TRIGGER trigger__procedure_change_categories_order__swap_table_order
 				INSTEAD OF UPDATE
 				ON procedure_change_categories_order
-				WHEN
-					old.table_order <> new.table_order AND
-					old.id = new.id
+				WHEN old.table_order <> new.table_order
 			BEGIN
 				SELECT
 					CASE
@@ -790,7 +818,7 @@ func Migrate(dbName string) error {
 				UPDATE categories SET
 					table_order = new.table_order,
 					updated_at = datetime('now')
-				WHERE id = new.id;
+				WHERE id = old.id;
 			END;`
 
 	// Execute query
@@ -886,6 +914,7 @@ func Migrate(dbName string) error {
 		id						INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 
 		category				INTEGER		NOT NULL	REFERENCES categories (id)
+															ON UPDATE CASCADE
 															ON DELETE RESTRICT,
 		period_start			DATETIME	NOT NULL,
 		period_end				DATETIME	NOT NULL,
@@ -894,6 +923,7 @@ func Migrate(dbName string) error {
 		spending_limit			NUMERIC		NOT NULL,
 		input_interval			INTEGER		NOT NULL,
 		input_period			INTEGER		NOT NULL	REFERENCES time_periods (id)
+															ON UPDATE CASCADE
 															ON DELETE RESTRICT,
 
 		initial_amount			NUMERIC		NOT NULL,
