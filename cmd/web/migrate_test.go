@@ -61,7 +61,6 @@ func afterAll() {
 	db.Close()
 
 	// Delete old DB
-	os.Remove("test.db")
 	os.Remove("test_copy.db")
 }
 
@@ -467,17 +466,13 @@ func TestMigration(t *testing.T) {
 						budget_input,
 						input_interval,
 						input_period,
-						spending_limit,
-						spending_interval,
-						spending_period
+						spending_limit
 					) VALUES (
 						'test category',
 						100,
 						1,
 						1,
-						100,
-						1,
-						1
+						100
 					)`
 
 			// Execute
@@ -509,23 +504,19 @@ func TestMigration(t *testing.T) {
 						budget_input,
 						input_interval,
 						input_period,
-						spending_limit,
-						spending_interval,
-						spending_period
+						spending_limit
 					) VALUES (
 						'test category 1',
 						100,
 						1,
 						1,
-						100,
-						1,
-						1
+						100
 					)`
 
 			// Execute
 			_, err = db.Exec(stmt)
 			if err != nil {
-				t.Error("couldn't insert an account using procedure", err)
+				t.Error("couldn't insert a category using procedure", err)
 				return
 			}
 
@@ -555,17 +546,13 @@ func TestMigration(t *testing.T) {
 						budget_input,
 						input_interval,
 						input_period,
-						spending_limit,
-						spending_interval,
-						spending_period
+						spending_limit
 					) VALUES (
 						'test category',
 						100,
 						1,
 						1,
-						100,
-						1,
-						1
+						100
 					)`
 
 			// Execute
@@ -618,51 +605,39 @@ func TestMigration(t *testing.T) {
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category1',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);
 			INSERT INTO procedure_new_category (
 				name,
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category2',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);
 			INSERT INTO procedure_new_category (
 				name,
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category3',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);`
 
 			// Execute
@@ -784,68 +759,52 @@ func TestMigration(t *testing.T) {
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category1',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);
 			INSERT INTO procedure_new_category (
 				name,
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category2',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);
 			INSERT INTO procedure_new_category (
 				name,
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category3',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);
 			INSERT INTO procedure_new_category (
 				name,
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category4',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);`
 
 			// Execute
@@ -928,34 +887,26 @@ func TestMigration(t *testing.T) {
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category1',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);
 			INSERT INTO procedure_new_category (
 				name,
 				budget_input,
 				input_interval,
 				input_period,
-				spending_limit,
-				spending_interval,
-				spending_period
+				spending_limit
 			) VALUES (
 				'test category2',
 				100,
 				1,
 				1,
-				100,
-				1,
-				1
+				100
 			);`
 
 			// Execute
@@ -1571,6 +1522,8 @@ func TestMigration(t *testing.T) {
 		 *
 		 */
 		// Test free funds procedure
+		// Free funds are set in the user table and the amount is reflected in a target account
+		// If the db is used only through procedures then the accounts total amount should never go bellow the free funds
 		func(t *testing.T) {
 			// Insert accounts and categories
 			err := beforeExpenseTest(t)
@@ -1623,7 +1576,369 @@ func TestMigration(t *testing.T) {
 				return
 			}
 		},
+
+		// Test adding funds to a category and reseting the input period
+		func(t *testing.T) {
+			// Seed account and category
+			err := seedAccAndCat(t)
+			if err != nil {
+				return
+			}
+
+			// Add money to free funds
+			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (100, 1)`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't add free funds;", err)
+				return
+			}
+
+			// Add too much money to category
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (200, 1)`
+			_, err = db.Exec(stmt)
+			if err == nil {
+				t.Error("shouldn't be able to add to category more money than in free funds")
+				return
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////// Add normal amount to category
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (60, 1)`
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't add money to category", err)
+				return
+			}
+
+			// Get data
+			user, err := getUser(t)
+			if err != nil {
+				return
+			}
+			accounts, err := getAccounts(t)
+			if err != nil {
+				return
+			}
+			categories, err := getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Free funds have to be reduced
+			if user.FreeFunds != 40 {
+				t.Errorf("free funds are wrong; expected 40; received %f", user.FreeFunds)
+				return
+			}
+
+			// Account should have the full sum
+			if accounts[0].CurrentAmount != 100 {
+				t.Errorf("account current amount is wrong; expected 100; received %f", accounts[0].CurrentAmount)
+				return
+			}
+
+			// Category should have the added amount
+			if categories[0].InitialAmount != 60 {
+				t.Errorf("category initial amount is wrong; expected 60; received %f", categories[0].InitialAmount)
+				return
+			}
+			if categories[0].SpendingLeft != 80 {
+				t.Errorf("category spending left is wrong; expected 80; received %f", categories[0].SpendingLeft)
+				return
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////// Add expenses and reset
+			// Add expense
+			stmt = `
+					INSERT INTO procedure_insert_tag (name) VALUES ('tag1'), ('tag2');
+					INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);
+					INSERT INTO procedure_link_tag_to_expense (expense_id, tag_id) VALUES (1, 1), (1, 2);`
+			_, err = db.Exec(stmt, time.Now())
+			if err != nil {
+				t.Error("couldn't add expense", err)
+				return
+			}
+
+			// Get category
+			categories, err = getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Category should have the updated amount
+			if categories[0].InitialAmount != 60 {
+				t.Errorf("category initial amount is wrong; expected 60; received %f", categories[0].InitialAmount)
+				return
+			}
+			if categories[0].CurrentAmount != 50 {
+				t.Errorf("category current amount is wrong; expected 50; received %f", categories[0].CurrentAmount)
+				return
+			}
+			if categories[0].SpendingLeft != 70 {
+				t.Errorf("category spending left is wrong; expected 70; received %f", categories[0].SpendingLeft)
+				return
+			}
+
+			// Reset category again
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (20, 1)`
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't add money to category", err)
+				return
+			}
+
+			// Get data
+			user, err = getUser(t)
+			if err != nil {
+				return
+			}
+			accounts, err = getAccounts(t)
+			if err != nil {
+				return
+			}
+			categories, err = getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Free funds have to be reduced
+			if user.FreeFunds != 20 {
+				t.Errorf("free funds are wrong; expected 20; received %f", user.FreeFunds)
+				return
+			}
+
+			// Account should have the full sum
+			if accounts[0].CurrentAmount != 90 {
+				t.Errorf("account current amount is wrong; expected 90; received %f", accounts[0].CurrentAmount)
+				return
+			}
+
+			// Category should have the added amount
+			if categories[0].InitialAmount != 70 {
+				t.Errorf("category current amount is wrong; expected 70; received %f", categories[0].InitialAmount)
+				return
+			}
+			if categories[0].CurrentAmount != 70 {
+				t.Errorf("category current amount is wrong; expected 70; received %f", categories[0].CurrentAmount)
+				return
+			}
+			if categories[0].SpendingLeft != 80 {
+				t.Errorf("category spending left is wrong; expected 80; received %f", categories[0].SpendingLeft)
+				return
+			}
+
+			// Get current expenses
+			var currentExpensesCount int
+			query := `SELECT COUNT(*) FROM view_current_expenses;`
+			row := db.QueryRow(query)
+			err = row.Scan(&currentExpensesCount)
+			if err != nil {
+				t.Error("couldn't get expenses count", err)
+				return
+			}
+
+			// Check count
+			if currentExpensesCount != 0 {
+				t.Errorf("too many current expenses; expected 0; received %d", currentExpensesCount)
+				return
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////// Try to delete archived expense
+			stmt = `DELETE FROM procedure_remove_expense WHERE id=1;`
+			_, err = db.Exec(stmt)
+			if err == nil {
+				t.Error("shouldn't be able to delete archived expense")
+				return
+			}
+			if !strings.HasPrefix(err.Error(), "cant delete archived expense") {
+				t.Errorf("wrong error; expected: 'cant delete archived expense', received: '%s'", err.Error())
+				return
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////// Look at archived periods
+			var numberOfPeriods int
+			query = `SELECT COUNT(*) FROM archived_periods;`
+			row = db.QueryRow(query)
+			err = row.Scan(&numberOfPeriods)
+			if err != nil {
+				t.Error("couldn't get expenses count", err)
+				return
+			}
+
+			// Check count
+			if numberOfPeriods != 2 {
+				t.Errorf("wrong number of periods; expected 2; received %d", numberOfPeriods)
+			}
+		},
+
+		// Money can be added and removed from category without reseting the input period
+		func(t *testing.T) {
+			// Seed account and category
+			err := seedAccAndCat(t)
+			if err != nil {
+				return
+			}
+
+			// Add money to free funds
+			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (200, 1)`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't add free funds;", err)
+				return
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////// Add normal amount to categories
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (50, 1);
+					INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (50, 2)`
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't add money to category", err)
+				return
+			}
+
+			// Get data
+			user, err := getUser(t)
+			if err != nil {
+				return
+			}
+			accounts, err := getAccounts(t)
+			if err != nil {
+				return
+			}
+			categories, err := getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Free funds have to be reduced
+			if user.FreeFunds != 100 {
+				t.Errorf("free funds are wrong; expected 100; received %f", user.FreeFunds)
+				return
+			}
+
+			// Account should have the full sum
+			if accounts[0].CurrentAmount != 200 {
+				t.Errorf("account current amount is wrong; expected 200; received %f", accounts[0].CurrentAmount)
+				return
+			}
+
+			// Category should have the added amount
+			if categories[0].InitialAmount != 50 || categories[1].InitialAmount != 50 {
+				t.Errorf("category initial amount is wrong; expected 50, 50; received %f, %f", categories[0].InitialAmount, categories[1].InitialAmount)
+				return
+			}
+			if categories[0].SpendingLeft != 80 || categories[1].SpendingLeft != 80 {
+				t.Errorf("category spending left is wrong; expected 80, 80; received %f, %f", categories[0].SpendingLeft, categories[1].SpendingLeft)
+				return
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////// Take money from first category
+			stmt = `INSERT INTO procedure_fund_category (amount, category) VALUES (-10, 1);`
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't add money to category", err)
+				return
+			}
+
+			// Get data
+			user, err = getUser(t)
+			if err != nil {
+				return
+			}
+			accounts, err = getAccounts(t)
+			if err != nil {
+				return
+			}
+			categories, err = getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Free funds have to be reduced
+			if user.FreeFunds != 110 {
+				t.Errorf("free funds are wrong; expected 110; received %f", user.FreeFunds)
+				return
+			}
+
+			// Account should have the full sum
+			if accounts[0].CurrentAmount != 200 {
+				t.Errorf("account current amount is wrong; expected 200; received %f", accounts[0].CurrentAmount)
+				return
+			}
+
+			// Category should have the added amount
+			if categories[0].InitialAmount != 40 || categories[1].InitialAmount != 50 {
+				t.Errorf("category initial amount is wrong; expected 40, 50; received %f, %f", categories[0].InitialAmount, categories[1].InitialAmount)
+				return
+			}
+			if categories[0].SpendingLeft != 80 || categories[1].SpendingLeft != 80 {
+				t.Errorf("category spending left is wrong; expected 80, 80; received %f, %f", categories[0].SpendingLeft, categories[1].SpendingLeft)
+				return
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////// Add money to second category
+			stmt = `INSERT INTO procedure_fund_category (amount, category) VALUES (10, 2);`
+			_, err = db.Exec(stmt)
+			if err != nil {
+				t.Error("couldn't add money to category", err)
+				return
+			}
+
+			// Get data
+			user, err = getUser(t)
+			if err != nil {
+				return
+			}
+			accounts, err = getAccounts(t)
+			if err != nil {
+				return
+			}
+			categories, err = getCategories(t)
+			if err != nil {
+				return
+			}
+
+			// Free funds have to be reduced
+			if user.FreeFunds != 100 {
+				t.Errorf("free funds are wrong; expected 100; received %f", user.FreeFunds)
+				return
+			}
+
+			// Account should have the full sum
+			if accounts[0].CurrentAmount != 200 {
+				t.Errorf("account current amount is wrong; expected 200; received %f", accounts[0].CurrentAmount)
+				return
+			}
+
+			// Category should have the added amount
+			if categories[0].InitialAmount != 40 || categories[1].InitialAmount != 60 {
+				t.Errorf("category initial amount is wrong; expected 40, 60; received %f, %f", categories[0].InitialAmount, categories[1].InitialAmount)
+				return
+			}
+			if categories[0].SpendingLeft != 80 || categories[1].SpendingLeft != 80 {
+				t.Errorf("category spending left is wrong; expected 80, 80; received %f, %f", categories[0].SpendingLeft, categories[1].SpendingLeft)
+				return
+			}
+		},
 	)
+}
+
+func seedAccAndCat(t *testing.T) error {
+	stmt := `	INSERT INTO accounts (name, table_order) VALUES ('test account1', 1);
+				INSERT INTO accounts (name, table_order) VALUES ('test account2', 1);
+				INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, table_order, initial_amount, current_amount) VALUES ('test category1', 100, 1, 2, 80, 80, 1, 0, 0);
+				INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, table_order, initial_amount, current_amount) VALUES ('test category2', 100, 1, 2, 80, 80, 1, 0, 0);`
+
+	// Execute
+	_, err := db.Exec(stmt)
+	if err != nil {
+		t.Error("couldn't insert accounts;", err)
+		return err
+	}
+
+	return nil
 }
 
 func beforeExpenseTest(t *testing.T) error {
@@ -1639,8 +1954,8 @@ func beforeExpenseTest(t *testing.T) error {
 	}
 
 	// Add categories
-	stmt = `INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, spending_interval, spending_period, table_order, initial_amount, current_amount) VALUES ('test category1', 100, 1, 2, 100, 100, 1, 2, 1, 100, 100);
-			INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, spending_interval, spending_period, table_order, initial_amount, current_amount) VALUES ('test category2', 100, 1, 2, 100, 100, 1, 2, 2, 200, 200);`
+	stmt = `INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, table_order, initial_amount, current_amount) VALUES ('test category1', 100, 1, 2, 100, 100, 1, 100, 100);
+			INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, table_order, initial_amount, current_amount) VALUES ('test category2', 100, 1, 2, 100, 100, 2, 200, 200);`
 
 	// Execute
 	_, err = db.Exec(stmt)
@@ -1648,19 +1963,6 @@ func beforeExpenseTest(t *testing.T) error {
 		t.Error("couldn't insert categories;", err)
 		return err
 	}
-
-	// Add money to categories and accounts
-	// stmt = `UPDATE categories SET initial_amount = 100 WHERE id=1;
-	// 		UPDATE categories SET initial_amount = 200 WHERE id=2;
-	// 		UPDATE accounts	  SET initial_amount = 100 WHERE id=1;
-	// 		UPDATE accounts	  SET initial_amount = 200 WHERE id=2;`
-
-	// Execute
-	// _, err = db.Exec(stmt)
-	// if err != nil {
-	// 	t.Error("couldn't insert categories;", err)
-	// 	return err
-	// }
 
 	// Add tags
 	stmt = `INSERT INTO tags (name) VALUES ('tag 1');
@@ -1747,8 +2049,6 @@ func getCategories(t *testing.T) ([]models.Category, error) {
 		concat(input_interval, input_period) as input_interval,
 		spending_limit,
 		spending_left,
-		last_spending_reset,
-		concat(spending_interval, spending_period) as spending_interval,
 		initial_amount,
 		current_amount,
 		table_order,
@@ -1776,8 +2076,6 @@ func getCategories(t *testing.T) ([]models.Category, error) {
 			&category.InputInterval,
 			&category.SpendingLimit,
 			&category.SpendingLeft,
-			&category.LastSpendingReset,
-			&category.SpendingInterval,
 			&category.InitialAmount,
 			&category.CurrentAmount,
 			&category.TableOrder,

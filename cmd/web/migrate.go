@@ -54,10 +54,12 @@ func Migrate(dbName string) error {
 					ON procedure_add_free_funds
 				BEGIN
 					UPDATE user SET
-						free_funds = free_funds + new.amount;
+						free_funds = free_funds + new.amount,
+						updated_at = datetime('now');
 
 					UPDATE accounts SET
-						current_amount = current_amount + new.amount
+						current_amount = current_amount + new.amount,
+						updated_at = datetime('now')
 					WHERE id = new.to_account;
 				END;`
 
@@ -76,21 +78,43 @@ func Migrate(dbName string) error {
 	 * Date is the date the expense was made
 	 * It tracks from which account was the money taken
 	 * It tracks from which category was the money taken
+	 *
+	 * From period tracks if the expense is archived
+	 * If the expense is not archived, the field is null
+	 * When the expense gets archived it will reference the periods table
 	 */
 	stmt = `CREATE TABLE expenses (
-		id				INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+		id				INTEGER		NOT NULL		PRIMARY KEY		AUTOINCREMENT,
 
 		amount			NUMERIC		NOT NULL,
-		date			DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
+		date			DATETIME	NOT NULL		DEFAULT CURRENT_TIMESTAMP,
 
-		from_account	INTEGER		NOT NULL	REFERENCES accounts (id)
-													ON DELETE RESTRICT,
-		from_category	INTEGER		NOT NULL	REFERENCES categories (id)
-													ON DELETE RESTRICT,
+		from_account	INTEGER		NOT NULL		REFERENCES accounts (id)
+														ON DELETE RESTRICT,
+		from_category	INTEGER		NOT NULL		REFERENCES categories (id)
+														ON DELETE RESTRICT,
+
+		from_period		INTEGER		DEFAULT null	REFERENCES archived_periods (id)
+														ON DELETE RESTRICT,
 		
-		created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-		updated_at		DATETIME				DEFAULT null
+		created_at		DATETIME	NOT NULL		DEFAULT CURRENT_TIMESTAMP,
+		updated_at		DATETIME					DEFAULT null
 	)`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * View current expenses
+	 */
+	stmt = `CREATE TABLE view_current_expenses AS
+				SELECT id, amount, date, from_account, from_category, created_at, updated_at
+				FROM expenses
+				WHERE from_period = null;`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -135,6 +159,7 @@ func Migrate(dbName string) error {
 
 				UPDATE categories SET
 					current_amount = current_amount - new.amount,
+					spending_left = spending_left - new.amount,
 					updated_at = datetime('now')
 				WHERE categories.id = new.from_category;
 			END;`
@@ -150,12 +175,18 @@ func Migrate(dbName string) error {
 	 * Delete expense
 	 */
 	stmt = `CREATE VIEW procedure_remove_expense AS
-				SELECT id, amount, from_account, from_category FROM expenses;
+				SELECT id, amount, from_account, from_category, from_period FROM expenses;
 			
-			CREATE TRIGGER triggers__procedure_remove_expense_remove
+			CREATE TRIGGER triggers__procedure_remove_expense__remove
 				INSTEAD OF DELETE
 				ON procedure_remove_expense
 			BEGIN
+				SELECT
+					CASE
+						WHEN old.from_period IS NOT NULL THEN
+							RAISE (ABORT, 'cant delete archived expense')
+					END;
+
 				DELETE FROM expenses WHERE id = old.id;
 
 				UPDATE accounts SET
@@ -168,7 +199,8 @@ func Migrate(dbName string) error {
 					current_amount = current_amount + old.amount,
 					updated_at = datetime('now')
 				WHERE categories.id = old.from_category;
-			END;`
+			END;
+			`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -181,12 +213,18 @@ func Migrate(dbName string) error {
 	 * Update expense
 	 */
 	stmt = `CREATE VIEW procedure_update_expense AS
-				SELECT id, amount, date, from_account, from_category FROM expenses;
+				SELECT id, amount, date, from_account, from_category, from_period FROM expenses;
 			
 			CREATE TRIGGER triggers__procedure_update_expense__update
 				INSTEAD OF UPDATE
 				ON procedure_update_expense
 			BEGIN
+			SELECT
+				CASE
+					WHEN old.from_period IS NOT NULL THEN
+						RAISE (ABORT, 'cant delete archived expense')
+				END;
+				
 				UPDATE expenses SET
 					amount = 		COALESCE(new.amount, old.amount),
 					date = 			COALESCE(new.date, old.date),
@@ -496,7 +534,10 @@ func Migrate(dbName string) error {
 					old.name <> new.name AND
 					old.id = new.id
 			BEGIN
-				UPDATE accounts SET name=new.name WHERE id=new.id;
+				UPDATE accounts SET
+					name=new.name,
+					updated_at = datetime('now')
+				WHERE id=new.id;
 			END;`
 
 	// Execute query
@@ -531,11 +572,13 @@ func Migrate(dbName string) error {
 					END;
 				
 				UPDATE accounts SET
-					table_order = old.table_order
+					table_order = old.table_order,
+					updated_at = datetime('now')
 				WHERE table_order = new.table_order;
 
 				UPDATE accounts SET
-					table_order = new.table_order
+					table_order = new.table_order,
+					updated_at = datetime('now')
 				WHERE id = new.id;
 			END;`
 
@@ -569,7 +612,8 @@ func Migrate(dbName string) error {
 				DELETE FROM accounts WHERE id=old.id;
 
 				UPDATE accounts SET
-					table_order = table_order - 1
+					table_order = table_order - 1,
+					updated_at = datetime('now')
 				WHERE table_order > old.table_order;
 			END;`
 
@@ -617,12 +661,8 @@ func Migrate(dbName string) error {
 		input_period			INTEGER		NOT NULL	REFERENCES time_periods (id)
 															ON DELETE RESTRICT,
 
-		spending_limit			NUMERIC		NOT NULL		CHECK (budget_input >= 0),
-		spending_left			NUMERIC		NOT NULL,
-		last_spending_reset		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-		spending_interval		INTEGER		NOT NULL		CHECK (input_interval > 0),
-		spending_period			INTEGER		NOT NULL	REFERENCES time_periods (id)
-															ON DELETE RESTRICT,
+		spending_limit			NUMERIC		NOT NULL		CHECK (spending_limit >= 0),
+		spending_left			NUMERIC		NOT NULL		CHECK (spending_left >= 0),
 
 		initial_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (initial_amount >= 0),
 		current_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (current_amount >= 0),
@@ -631,8 +671,7 @@ func Migrate(dbName string) error {
 
 		created_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at				DATETIME	null		DEFAULT null
-	)
-	`
+	)`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -656,9 +695,7 @@ func Migrate(dbName string) error {
 					budget_input,
 					input_interval,
 					input_period,
-					spending_limit,
-					spending_interval,
-					spending_period
+					spending_limit
 				FROM categories;
 				
 			CREATE TRIGGER triggers__procedure_new_category__insert_new
@@ -672,8 +709,6 @@ func Migrate(dbName string) error {
 					input_period,
 					spending_limit,
 					spending_left,
-					spending_interval,
-					spending_period,
 					initial_amount,
 					current_amount,
 					table_order
@@ -684,8 +719,6 @@ func Migrate(dbName string) error {
 					new.input_period,
 					new.spending_limit,
 					new.spending_limit,
-					new.spending_interval,
-					new.spending_period,
 					0,
 					0,
 					(SELECT COUNT(*) FROM categories) + 1
@@ -713,7 +746,8 @@ func Migrate(dbName string) error {
 					old.id = new.id
 				BEGIN
 					UPDATE categories SET
-						name = new.name
+						name = new.name,
+						updated_at = datetime('now')
 					WHERE id = new.id;
 				END;`
 
@@ -749,11 +783,13 @@ func Migrate(dbName string) error {
 					END;
 				
 				UPDATE categories SET
-					table_order = old.table_order
+					table_order = old.table_order,
+					updated_at = datetime('now')
 				WHERE table_order = new.table_order;
 
 				UPDATE categories SET
-					table_order = new.table_order
+					table_order = new.table_order,
+					updated_at = datetime('now')
 				WHERE id = new.id;
 			END;`
 
@@ -787,7 +823,8 @@ func Migrate(dbName string) error {
 				DELETE FROM categories WHERE id = old.id;
 
 				UPDATE categories SET
-					table_order = table_order - 1
+					table_order = table_order - 1,
+					updated_at = datetime('now')
 				WHERE table_order > old.table_order;
 			END;`
 
@@ -834,6 +871,131 @@ func Migrate(dbName string) error {
 	 INSERT INTO time_periods (period) VALUES (' MONTHS');
 	 INSERT INTO time_periods (period) VALUES (' DAYS');
 	 `
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Archived periods table
+	 */
+	stmt = `CREATE TABLE archived_periods (
+		id						INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
+
+		category				INTEGER		NOT NULL	REFERENCES categories (id)
+															ON DELETE RESTRICT,
+		period_start			DATETIME	NOT NULL,
+		period_end				DATETIME	NOT NULL,
+
+		budget_input			NUMERIC		NOT NULL,
+		spending_limit			NUMERIC		NOT NULL,
+		input_interval			INTEGER		NOT NULL,
+		input_period			INTEGER		NOT NULL	REFERENCES time_periods (id)
+															ON DELETE RESTRICT,
+
+		initial_amount			NUMERIC		NOT NULL,
+		end_amount				NUMERIC		NOT NULL,
+
+		created_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
+		updated_at				DATETIME				DEFAULT null
+	)`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 *
+	 * Input data to category and reset period
+	 *
+	 *
+	 */
+	stmt = `CREATE VIEW procedure_fund_category_and_reset_period AS
+				SELECT current_amount as amount, id as category FROM categories;
+				
+			CREATE TRIGGER trigger__procedure_fund_category_and_reset_period_insert
+				INSTEAD OF INSERT
+				ON procedure_fund_category_and_reset_period
+			BEGIN
+				SELECT
+					CASE
+						WHEN new.amount < 0 THEN
+							RAISE (ABORT, 'input amount must be greather than zero')
+					END;
+
+				INSERT INTO archived_periods (
+					category,
+					period_start,
+					period_end,
+					budget_input,
+					spending_limit,
+					input_interval,
+					input_period,
+					initial_amount,
+					end_amount
+				) SELECT
+					id,
+					last_input_date,
+					datetime('now'),
+					budget_input,
+					spending_limit,
+					input_interval,
+					input_period,
+					initial_amount,
+					current_amount
+				FROM categories
+				WHERE id = new.category;
+				
+				UPDATE user SET
+					free_funds = free_funds - new.amount,
+					updated_at = datetime('now');
+
+				UPDATE categories SET
+					initial_amount = current_amount + new.amount,
+					current_amount = current_amount + new.amount,
+					spending_left = spending_limit,
+					updated_at = datetime('now')
+				WHERE id = new.category;
+
+				UPDATE expenses SET
+					from_period = last_insert_rowid(),
+					updated_at = datetime('now')
+				WHERE from_period IS NULL;
+			END;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * Add money to category without reseting the period
+	 */
+	stmt = `CREATE VIEW procedure_fund_category AS
+				SELECT current_amount as amount, id as category FROM categories;
+				
+			CREATE TRIGGER triggers__procedure_fund_category__insert
+				INSTEAD OF INSERT
+				ON procedure_fund_category
+			BEGIN
+				UPDATE user SET
+					free_funds = free_funds - new.amount,
+					updated_at = datetime('now');
+
+				UPDATE categories SET
+					initial_amount = current_amount + new.amount,
+					current_amount = current_amount + new.amount,
+					updated_at = datetime('now')
+				WHERE id = new.category;
+			END;`
 
 	// Execute query
 	_, err = db.Exec(stmt)

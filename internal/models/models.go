@@ -79,10 +79,8 @@ type Category struct {
 	LastInputDate time.Time
 	InputInterval time.Duration
 
-	SpendingLimit     float64
-	SpendingLeft      float64
-	LastSpendingReset time.Time
-	SpendingInterval  time.Duration
+	SpendingLimit float64
+	SpendingLeft  float64
 
 	InitialAmount float64
 	CurrentAmount float64
