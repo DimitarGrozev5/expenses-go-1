@@ -25,7 +25,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
-	// Get accounts count
+	// Get accounts
 	accounts, err := repo.GetAccounts(true)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
@@ -34,10 +34,26 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If there are not accounts redirect to accounts page and prompt user to create an account
+	// If there are no accounts redirect to accounts page and prompt user to create an account
 	if len(accounts) == 0 {
 		m.AddWarningMsg(r, "You have to create a Payment Account before you can add Expenses")
 		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		return
+	}
+
+	// Get categories
+	categories, err := repo.GetCategories()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
+	}
+
+	// If there are no categories redirect to categories page and prompt user to create a category
+	if len(categories) == 0 {
+		m.AddWarningMsg(r, "You have to create a Budget Category before you can add Expenses")
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
 		return
 	}
 
