@@ -85,6 +85,20 @@ func (f *Form) IsInt(field string) bool {
 	return true
 }
 
+func (f *Form) Min(field string, min float64) bool {
+	x := f.Get(field)
+	val, err := strconv.ParseFloat(x, 64)
+	if err != nil {
+		f.Errors.Add(field, "This field must be a number")
+		return false
+	}
+	if val < min {
+		f.Errors.Add(field, fmt.Sprintf("Value is too small. Min value is %0f", val))
+		return false
+	}
+	return true
+}
+
 func (f *Form) IsDate(field string, layout string) bool {
 	x := f.Get(field)
 	_, err := time.Parse(layout, x)
