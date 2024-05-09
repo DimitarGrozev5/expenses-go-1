@@ -89,3 +89,15 @@ type Category struct {
 	CreatedAt  time.Time
 	UpdatedAt  sql.NullTime
 }
+
+type CategoryOverview struct {
+	ID            int
+	Name          string
+	SpendingLimit float64
+	SpendingLeft  float64
+	PeriodStart   time.Time
+	PeriodEnd     time.Time
+	InitialAmount float64
+	CurrentAmount float64
+	TableOrder    int
+}
