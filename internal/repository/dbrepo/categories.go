@@ -128,6 +128,7 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 	for rows.Next() {
 		// Define base models
 		var category models.CategoryOverview
+		var periodEnd string
 
 		err = rows.Scan(
 			&category.ID,
@@ -135,7 +136,7 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 			&category.SpendingLimit,
 			&category.SpendingLeft,
 			&category.PeriodStart,
-			&category.PeriodEnd,
+			&periodEnd,
 			&category.InitialAmount,
 			&category.CurrentAmount,
 			&category.TableOrder,
@@ -143,6 +144,12 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 		if err != nil {
 			return nil, err
 		}
+
+		t, err := time.Parse("2006-01-02 15:04:05", periodEnd)
+		if err != nil {
+			return nil, err
+		}
+		category.PeriodEnd = t
 
 		// Add to accounts
 		categories = append(categories, category)

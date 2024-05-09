@@ -749,7 +749,7 @@ func Migrate(dbName string) error {
 					c.spending_limit,
 					c.spending_left,
 					c.last_input_date AS period_start,
-					datetime(last_input_date, concat(input_interval, p.period)) AS period_end,
+					datetime(c.last_input_date, concat(c.input_interval, p.period)) AS period_end,
 					c.initial_amount,
 					c.current_amount,
 					c.table_order
