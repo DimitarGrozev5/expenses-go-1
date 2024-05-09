@@ -717,19 +717,27 @@ func Migrate(dbName string) error {
 	 */
 	stmt = `CREATE VIEW view_categories AS
 				SELECT
-					id,
-					name,
-					budget_input,
-					last_input_date,
-					concat(input_interval, input_period) as input_interval,
-					spending_limit,
-					spending_left,
-					initial_amount,
-					current_amount,
-					table_order,
-					created_at,
-					updated_at
-				FROM categories;`
+					c.id,
+					c.name,
+					c.budget_input,
+					c.last_input_date,
+					concat(c.input_interval, p.period) as input_interval,
+					c.spending_limit,
+					c.spending_left,
+					c.initial_amount,
+					c.current_amount,
+					c.table_order,
+					c.created_at,
+					c.updated_at
+				FROM categories AS c
+				JOIN time_periods AS p ON c.input_period = p.id;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
 
 	/*
 	 * View categories overview
@@ -746,7 +754,7 @@ func Migrate(dbName string) error {
 					c.current_amount,
 					c.table_order
 				FROM categories AS c
-				JOIN time_periods AS p ON categories.input_period = time_periods.id;`
+				JOIN time_periods AS p ON c.input_period = p.id;`
 
 	// Execute query
 	_, err = db.Exec(stmt)
@@ -919,6 +927,7 @@ func Migrate(dbName string) error {
 		id						INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 
 		period					TEXT		NOT NULL	UNIQUE			CHECK (period IN (' YEARS', ' MONTHS', ' DAYS')),
+		caption					TEXT		NOT NULL,
 
 		created_at				DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
 		updated_at				DATETIME				DEFAULT null
@@ -938,9 +947,9 @@ func Migrate(dbName string) error {
 		 SELECT RAISE (ABORT, 'Cant update in time_periods');
 	 END;
 
-	 INSERT INTO time_periods (period) VALUES (' YEARS');
-	 INSERT INTO time_periods (period) VALUES (' MONTHS');
-	 INSERT INTO time_periods (period) VALUES (' DAYS');
+	 INSERT INTO time_periods (period, caption) VALUES (' YEARS', 'Years');
+	 INSERT INTO time_periods (period, caption) VALUES (' MONTHS', 'Months');
+	 INSERT INTO time_periods (period, caption) VALUES (' DAYS', 'Days');
 	 `
 
 	// Execute query
