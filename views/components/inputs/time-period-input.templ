@@ -1,0 +1,56 @@
+package inputs
+
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+import "fmt"
+
+type TimePeriodInputProps struct {
+	IntervalName   string
+	PeriodName     string
+	Label          string
+	Required       bool
+	Interval       string
+	SelectedPeriod string
+	Periods        []models.TimePeriod
+	ErrorInterval  string
+	ErrorPeriod    string
+}
+
+templ TimePeriodInput(props TimePeriodInputProps) {
+	<div class="flex flex-col items-stretch">
+		<label for={ props.IntervalName }>{ props.Label }</label>
+		<div class="flex flex-row gap-1">
+			<input
+				name={ props.IntervalName }
+				id={ props.IntervalName }
+				required?={ props.Required }
+				value={ props.Interval }
+				type="number"
+				min="0"
+				step="1"
+				class="border border-primary-500 rounded-md p-2 flex-[2]"
+			/>
+			<select
+				name={ props.PeriodName }
+				id={ props.PeriodName }
+				required?={ props.Required }
+				class="flex-1 border border-primary-500 rounded-md p-2"
+			>
+				<option value=""></option>
+				for _, period := range props.Periods {
+					<option
+						selected?={ props.SelectedPeriod == props.SelectedPeriod }
+						value={ fmt.Sprintf("%d",period.ID) }
+					>
+						{ period.Caption }
+					</option>
+				}
+			</select>
+		</div>
+		if len(props.ErrorInterval) > 0 {
+			<div class="text-red-500">{ props.ErrorInterval }</div>
+		}
+		if len(props.ErrorPeriod) > 0 {
+			<div class="text-red-500">{ props.ErrorPeriod }</div>
+		}
+	</div>
+}
