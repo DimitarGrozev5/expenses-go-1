@@ -8,38 +8,13 @@ import (
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 )
 
-func (m *sqliteDBRepo) GetAccountsCount() (int, error) {
-	// Define context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Define query
-	query := `SELECT COUNT(*) FROM accounts`
-
-	// Store count
-	var count int
-
-	// Get rows
-	row := m.DB.QueryRowContext(ctx, query)
-
-	// Scan row into model
-	err := row.Scan(&count)
-
-	// Check for error
-	if err != nil {
-		return count, err
-	}
-
-	return count, nil
-}
-
 func (m *sqliteDBRepo) GetAccounts(orderByPopularity bool) ([]models.Account, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// Define query
-	query := `SELECT id, name, current_amount, usage_count, table_order FROM accounts`
+	query := `SELECT id, name, current_amount, usage_count, table_order, created_at, updated_at FROM accounts`
 
 	// Order by option
 	if orderByPopularity {
@@ -63,7 +38,15 @@ func (m *sqliteDBRepo) GetAccounts(orderByPopularity bool) ([]models.Account, er
 		// Define base models
 		var account models.Account
 
-		err = rows.Scan(&account.ID, &account.Name, &account.CurrentAmount, &account.UsageCount, &account.TableOrder)
+		err = rows.Scan(
+			&account.ID,
+			&account.Name,
+			&account.CurrentAmount,
+			&account.UsageCount,
+			&account.TableOrder,
+			&account.CreatedAt,
+			&account.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +68,7 @@ func (m *sqliteDBRepo) GetAccount(id int) (models.Account, error) {
 	defer cancel()
 
 	// Define query
-	query := `SELECT id, name, current_amount, usage_count, table_order FROM accounts WHERE id=$1`
+	query := `SELECT id, name, current_amount, usage_count, table_order, created_at, updated_at FROM accounts WHERE id=$1`
 
 	// Get row
 	row := m.DB.QueryRowContext(ctx, query, id)
@@ -100,6 +83,8 @@ func (m *sqliteDBRepo) GetAccount(id int) (models.Account, error) {
 		&account.CurrentAmount,
 		&account.UsageCount,
 		&account.TableOrder,
+		&account.CreatedAt,
+		&account.UpdatedAt,
 	)
 
 	// Check for error
@@ -116,7 +101,7 @@ func (m *sqliteDBRepo) AddAccount(account models.Account) error {
 	defer cancel()
 
 	// Define query to insert account
-	stmt := `INSERT INTO accounts(name) VALUES($1)`
+	stmt := `INSERT INTO procedure_insert_account (name) VALUES ($1)`
 
 	// Execute query
 	_, err := m.DB.ExecContext(
@@ -131,7 +116,25 @@ func (m *sqliteDBRepo) AddAccount(account models.Account) error {
 	return nil
 }
 
-func (m *sqliteDBRepo) EditAccount(account models.Account) error {
+func (m *sqliteDBRepo) EditAccountName(id int, name string) error {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query to insert account
+	stmt := `UPDATE procedure_account_update_name SET name = $1 WHERE id = $2`
+
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		name,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -189,17 +192,12 @@ func (m *sqliteDBRepo) ReorderAccount(currentAccount models.Account, direction i
 	defer tx.Rollback()
 
 	// Setup query
-	stmt := `
-			UPDATE accounts SET table_order = $1 WHERE table_order = $2;
-			UPDATE accounts SET table_order = $3 WHERE id = $4;
-	`
+	stmt := `UPDATE procedure_change_accounts_order SET table_order = $1 WHERE id = $2`
 
 	// Execute query
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		currentAccount.TableOrder,
-		currentAccount.TableOrder+direction,
 		currentAccount.TableOrder+direction,
 		currentAccount.ID,
 	)

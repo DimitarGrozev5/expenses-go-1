@@ -86,7 +86,7 @@ func TestMigration(t *testing.T) {
 		// You can insert an account using an insert procedure
 		func(t *testing.T) {
 			// Insert account
-			stmt := `INSERT INTO procedure_new_account (name) VALUES ('test account')`
+			stmt := `INSERT INTO procedure_insert_account (name) VALUES ('test account')`
 
 			// Execute
 			_, err := db.Exec(stmt)
@@ -124,7 +124,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Insert account
-			stmt = `INSERT INTO procedure_new_account (name) VALUES ('test account 1')`
+			stmt = `INSERT INTO procedure_insert_account (name) VALUES ('test account 1')`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -165,7 +165,8 @@ func TestMigration(t *testing.T) {
 		// You can rename account using procedure
 		func(t *testing.T) {
 			// Insert account
-			stmt := `INSERT INTO procedure_new_account (name) VALUES ('test account')`
+			stmt := `INSERT INTO procedure_insert_account (name) VALUES ('test account');
+					 INSERT INTO procedure_insert_account (name) VALUES ('test account2')`
 
 			// Execute
 			_, err := db.Exec(stmt)
@@ -187,7 +188,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Rename account
-			stmt = `UPDATE procedure_account_name SET name='test name 2' WHERE id=1`
+			stmt = `UPDATE procedure_account_update_name SET name='test name 2' WHERE id=1`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -203,8 +204,8 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Check name
-			if accounts[0].Name != "test name 2" {
-				t.Errorf("wrong account name; expected 'test name 2'; received %s", accounts[0].Name)
+			if accounts[0].Name != "test name 2" || accounts[1].Name != "test account2" {
+				t.Errorf("wrong account name; expected 'test name 2', 'test account2'; received '%s', '%s'", accounts[0].Name, accounts[1].Name)
 				return
 			}
 		},
@@ -212,9 +213,9 @@ func TestMigration(t *testing.T) {
 		// You can move account up and down
 		func(t *testing.T) {
 			// Insert accounts
-			stmt := `	INSERT INTO procedure_new_account (name) VALUES ('acc 1');
-						INSERT INTO procedure_new_account (name) VALUES ('acc 2');
-						INSERT INTO procedure_new_account (name) VALUES ('acc 3')`
+			stmt := `	INSERT INTO procedure_insert_account (name) VALUES ('acc 1');
+						INSERT INTO procedure_insert_account (name) VALUES ('acc 2');
+						INSERT INTO procedure_insert_account (name) VALUES ('acc 3')`
 
 			// Execute
 			_, err := db.Exec(stmt)
@@ -330,10 +331,10 @@ func TestMigration(t *testing.T) {
 		// You can delete an unused account and the table_order will update on all others
 		func(t *testing.T) {
 			// Insert accounts
-			stmt := `	INSERT INTO procedure_new_account (name) VALUES ('acc 1');
-						INSERT INTO procedure_new_account (name) VALUES ('acc 2');
-						INSERT INTO procedure_new_account (name) VALUES ('acc 3');
-						INSERT INTO procedure_new_account (name) VALUES ('acc 4');`
+			stmt := `	INSERT INTO procedure_insert_account (name) VALUES ('acc 1');
+						INSERT INTO procedure_insert_account (name) VALUES ('acc 2');
+						INSERT INTO procedure_insert_account (name) VALUES ('acc 3');
+						INSERT INTO procedure_insert_account (name) VALUES ('acc 4');`
 
 			// Execute
 			_, err := db.Exec(stmt)
@@ -409,8 +410,8 @@ func TestMigration(t *testing.T) {
 		// You can't delete an account that is being used. Account is being used when it's referenced by excpenses or when it has funds
 		func(t *testing.T) {
 			// Insert accounts
-			stmt := `	INSERT INTO procedure_new_account (name) VALUES ('acc 1');
-						INSERT INTO procedure_new_account (name) VALUES ('acc 2');`
+			stmt := `	INSERT INTO procedure_insert_account (name) VALUES ('acc 1');
+						INSERT INTO procedure_insert_account (name) VALUES ('acc 2');`
 
 			// Execute
 			_, err := db.Exec(stmt)

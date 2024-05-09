@@ -24,10 +24,9 @@ type DatabaseRepo interface {
 	DeleteExpense(id int) error
 
 	// Account methods
-	GetAccountsCount() (int, error)
 	GetAccounts(orderByPopularity bool) ([]models.Account, error)
 	AddAccount(account models.Account) error
-	EditAccount(account models.Account) error
+	EditAccountName(id int, name string) error
 	DeleteAccount(id int) error
 	TransferFunds(fromAccount, toAccount models.Account, amount float64) error
 	ReorderAccount(currentAccount models.Account, direction int) error

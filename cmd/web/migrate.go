@@ -533,12 +533,12 @@ func Migrate(dbName string) error {
 	 *
 	 * Provide only a name. Everything else is auto generated
 	 */
-	stmt = `CREATE VIEW procedure_new_account AS
+	stmt = `CREATE VIEW procedure_insert_account AS
 				SELECT name FROM accounts;
 				
-			CREATE TRIGGER trigger__procedure_new_account__insert_new_account
+			CREATE TRIGGER trigger__procedure_insert_account__insert
 				INSTEAD OF INSERT
-				ON procedure_new_account
+				ON procedure_insert_account
 			BEGIN
 				INSERT INTO accounts (
 					name,
@@ -559,12 +559,12 @@ func Migrate(dbName string) error {
 	/*
 	 * Edit account name
 	 */
-	stmt = `CREATE VIEW procedure_account_name AS
+	stmt = `CREATE VIEW procedure_account_update_name AS
 				SELECT id, name FROM accounts;
 				
-			CREATE TRIGGER trigger__procedure_account_name__update_account_name
+			CREATE TRIGGER trigger__procedure_account_update_name__update
 				INSTEAD OF UPDATE
-				ON procedure_account_name
+				ON procedure_account_update_name
 				WHEN old.name <> new.name
 			BEGIN
 				UPDATE accounts SET
