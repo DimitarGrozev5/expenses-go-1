@@ -712,6 +712,49 @@ func Migrate(dbName string) error {
 		return err
 	}
 
+	/*
+	 * View categories
+	 */
+	stmt = `CREATE VIEW view_categories AS
+				SELECT
+					id,
+					name,
+					budget_input,
+					last_input_date,
+					concat(input_interval, input_period) as input_interval,
+					spending_limit,
+					spending_left,
+					initial_amount,
+					current_amount,
+					table_order,
+					created_at,
+					updated_at
+				FROM categories;`
+
+	/*
+	 * View categories overview
+	 */
+	stmt = `CREATE VIEW view_categories_overview AS
+				SELECT
+					c.id,
+					c.name,
+					c.spending_limit,
+					c.spending_left,
+					c.last_input_date AS period_start,
+					datetime(last_input_date, concat(input_interval, p.period)) AS period_end,
+					c.initial_amount,
+					c.current_amount,
+					c.table_order
+				FROM categories AS c
+				JOIN time_periods AS p ON categories.input_period = time_periods.id;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
 	/**
 	 **
 	 ** Category stored procedures
