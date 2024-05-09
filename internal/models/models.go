@@ -101,3 +101,12 @@ type CategoryOverview struct {
 	CurrentAmount float64
 	TableOrder    int
 }
+
+// Time periods
+type TimePeriod struct {
+	ID        int
+	Period    string
+	Caption   string
+	CreatedAt time.Time
+	UpdatedAt sql.NullTime
+}
