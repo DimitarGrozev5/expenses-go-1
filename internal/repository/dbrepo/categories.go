@@ -40,7 +40,7 @@ func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
 				name,
 				budget_input,
 				last_input_date,
-				concat(input_interval, input_period) as input_interval,
+				input_interval,
 				spending_limit,
 				spending_left,
 				initial_amount,
@@ -155,52 +155,35 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 	return categories, nil
 }
 
-func (m *sqliteDBRepo) GetAccount1(id int) (models.Account, error) {
-	// Define context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Define query
-	query := `SELECT id, name, current_amount, usage_count, table_order, created_at, updated_at FROM accounts WHERE id=$1`
-
-	// Get row
-	row := m.DB.QueryRowContext(ctx, query, id)
-
-	// Set account
-	var account models.Account
-
-	// Scan row into model
-	err := row.Scan(
-		&account.ID,
-		&account.Name,
-		&account.CurrentAmount,
-		&account.UsageCount,
-		&account.TableOrder,
-		&account.CreatedAt,
-		&account.UpdatedAt,
-	)
-
-	// Check for error
-	if err != nil {
-		return account, err
-	}
-
-	return account, nil
-}
-
-func (m *sqliteDBRepo) AddAccount1(name string) error {
+func (m *sqliteDBRepo) AddCategory(name string, budgetInput float64, spendingLimit float64, inputInterval int, inputPeriod int) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// Define query to insert account
-	stmt := `INSERT INTO procedure_insert_account (name) VALUES ($1)`
+	stmt := `INSERT INTO procedure_new_category (
+		name,
+		budget_input,
+		input_interval,
+		input_period,
+		spending_limit
+	) VALUES (
+		$1,
+		$2,
+		$3,
+		$4,
+		$5
+	)`
 
 	// Execute query
 	_, err := m.DB.ExecContext(
 		ctx,
 		stmt,
 		name,
+		budgetInput,
+		inputInterval,
+		inputPeriod,
+		spendingLimit,
 	)
 	if err != nil {
 		return err
