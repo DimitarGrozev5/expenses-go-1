@@ -53,6 +53,10 @@ func routes(_ *config.AppConfig) http.Handler {
 		r.Post("/accounts/{accountId}/move-up", handlers.Repo.PostMoveAccount(1))
 		r.Post("/accounts/{accountId}/move-down", handlers.Repo.PostMoveAccount(-1))
 		r.Post("/accounts/{accountId}/delete", handlers.Repo.PostDeleteAccount)
+
+		// Handle category related routes
+		r.Get("/categories", handlers.Repo.Categories)
+		r.Post("/categories/add", handlers.Repo.PostNewCategory)
 	})
 
 	return mux
