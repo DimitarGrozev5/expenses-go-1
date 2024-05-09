@@ -104,13 +104,8 @@ func (m *Repository) PostNewAccount(w http.ResponseWriter, r *http.Request) {
 	// Get data
 	name := form.Get("name")
 
-	// Get Account object
-	account := models.Account{
-		Name: name,
-	}
-
 	// Add expense to database
-	err = repo.AddAccount(account)
+	err = repo.AddAccount(name)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Failed to add account")

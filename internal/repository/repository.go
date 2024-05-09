@@ -25,7 +25,7 @@ type DatabaseRepo interface {
 
 	// Account methods
 	GetAccounts(orderByPopularity bool) ([]models.Account, error)
-	AddAccount(account models.Account) error
+	AddAccount(name string) error
 	EditAccountName(id int, name string) error
 	DeleteAccount(id int) error
 	TransferFunds(fromAccount, toAccount models.Account, amount float64) error

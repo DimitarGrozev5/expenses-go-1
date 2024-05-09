@@ -95,7 +95,7 @@ func (m *sqliteDBRepo) GetAccount(id int) (models.Account, error) {
 	return account, nil
 }
 
-func (m *sqliteDBRepo) AddAccount(account models.Account) error {
+func (m *sqliteDBRepo) AddAccount(name string) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -107,7 +107,7 @@ func (m *sqliteDBRepo) AddAccount(account models.Account) error {
 	_, err := m.DB.ExecContext(
 		ctx,
 		stmt,
-		account.Name,
+		name,
 	)
 	if err != nil {
 		return err
