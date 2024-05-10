@@ -8,25 +8,47 @@ import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 // Page data
 type AccountsData struct {
 	models.TemplateData
-	Accounts []models.Account
+	Accounts  []models.Account
+	FreeFunds float64
 }
 
 templ (d AccountsData) View() {
 	@layout.MainLayout(d.TemplateData) {
 		@layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
-			@cards.AddCard("Add New Account", "/accounts/add", d.DialogOpened("add-account")) {
-				@inputs.CsrfInput(d.CSRFToken)
-				@inputs.TextInput(inputs.TextInputProps{
-					Label:    "Name",
-					Name:     "name",
-					Type:     "string",
-					Required: true,
-					Value:    d.Form["add-account"].Get("name"),
-					Error:    d.Form["add-account"].Errors.Get("name"),
-				})
-			}
+			<div class="flex flex-row items-stretch gap-2">
+				@cards.AddCard("Add New Account", "/accounts/add", d.DialogOpened("add-account")) {
+					@inputs.CsrfInput(d.CSRFToken)
+					@inputs.TextInput(inputs.TextInputProps{
+						Label:    "Name",
+						Name:     "name",
+						Type:     "text",
+						Required: true,
+						Value:    d.Form["add-account"].Get("name"),
+						Error:    d.Form["add-account"].Errors.Get("name"),
+					})
+				}
+				@cards.AddCard("Add Free Funds", "/accounts/add-free-fund", d.DialogOpened("add-account")) {
+					@inputs.CsrfInput(d.CSRFToken)
+					@inputs.TextInput(inputs.TextInputProps{
+						Label:    "Amount",
+						Name:     "amount",
+						Type:     "number",
+						Required: true,
+						Value:    d.Form["add-free-funds"].Get("amount"),
+						Error:    d.Form["add-free-funds"].Errors.Get("amount"),
+					})
+					@inputs.AccountSelect(d.Accounts, inputs.AccountSelectProps{
+						Label:    "To Account",
+						Name:     "to-account",
+						Required: true,
+						Value:    d.Form["add-free-funds"].Get("to-account"),
+						Error:    d.Form["add-free-funds"].Errors.Get("to-account"),
+					})
+				}
+			</div>
+			@FreeFunds(d.FreeFunds)
 			for index, account := range d.Accounts {
-				@AccountCard(account, index == 0, index == len(d.Accounts)-1, d.CSRFToken /* , d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)] */)
+				@AccountCard(account, index == 0, index == len(d.Accounts)-1, d.CSRFToken)
 			}
 		}
 	}

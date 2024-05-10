@@ -1,0 +1,18 @@
+package accountsview
+
+import "fmt"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
+
+templ FreeFunds(amount float64) {
+	@cards.Card() {
+		<div class="flex flex-row items-center gap-4">
+			<div class="flex flex-col items-center justify-center self-stretch gap-1 -ml-2 -my-2"></div>
+			<div class="flex-[2] flex flex-row items-center gap-1">
+				<div class="text-3xl text-primary-600">Free Funds</div>
+			</div>
+			<div class="flex-[1] flex flex-row items-center gap-1">
+				<div class="text-2xl text-primary-600">{ fmt.Sprintf("%.2f", amount) }</div>
+			</div>
+		</div>
+	}
+}

@@ -29,11 +29,20 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
+	// Get user
+	user, err := repo.GetUser()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting accounts")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
 	// Get template data
 	td := models.TemplateData{
 		Title: "Accounts",
 		Form: map[string]*forms.Form{
-			"add-account": forms.New(nil),
+			"add-account":    forms.New(nil),
+			"add-free-funds": forms.New(nil),
 		},
 	}
 
@@ -61,6 +70,7 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 	data := accountsview.AccountsData{
 		TemplateData: td,
 		Accounts:     accounts,
+		FreeFunds:    user.FreeFunds,
 	}
 
 	// Render view
