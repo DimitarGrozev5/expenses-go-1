@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -142,7 +143,7 @@ func (m *Repository) PostNewCategory(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
 
-func (m *Repository) PostMoveAccount1(direction int) func(w http.ResponseWriter, r *http.Request) {
+func (m *Repository) PostMoveCategory(direction int) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse form
 		err := r.ParseForm()
@@ -150,12 +151,12 @@ func (m *Repository) PostMoveAccount1(direction int) func(w http.ResponseWriter,
 			log.Println(err)
 		}
 
-		// Get account id from route param
-		idParam := chi.URLParam(r, "accountId")
+		// Get category id from route param
+		idParam := chi.URLParam(r, "categoryId")
 		id, err := strconv.ParseInt(idParam, 10, 32)
 		if idParam == "" || err != nil {
-			m.AddErrorMsg(r, "Invalid account")
-			http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+			m.AddErrorMsg(r, "Invalid category")
+			http.Redirect(w, r, "/categories", http.StatusSeeOther)
 			return
 		}
 
@@ -181,7 +182,7 @@ func (m *Repository) PostMoveAccount1(direction int) func(w http.ResponseWriter,
 			})
 
 			// Redirect to expenses
-			http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+			http.Redirect(w, r, "/categories", http.StatusSeeOther)
 
 			return
 		}
@@ -190,46 +191,40 @@ func (m *Repository) PostMoveAccount1(direction int) func(w http.ResponseWriter,
 		repo, ok := m.GetDB(r)
 		if !ok {
 			m.App.ErrorLog.Println("Cannot get DB repo")
-			m.AddErrorMsg(r, "Please login to view expenses")
+			m.AddErrorMsg(r, "Please login to view categories")
 			http.Redirect(w, r, "/logout", http.StatusSeeOther)
 		}
 
 		// Get data from form
 		tableOrder, _ := strconv.ParseInt(form.Get("table_order"), 10, 64)
 
-		// Construct account
-		account := models.Account{
-			ID:         int(id),
-			TableOrder: int(tableOrder),
-		}
-
-		// Update account position
-		err = repo.ReorderAccount(account, direction)
+		// Update category position
+		err = repo.ReorderCategory(int(id), int(tableOrder)+direction)
 		if err != nil {
 			m.App.ErrorLog.Println(err)
-			m.AddErrorMsg(r, "Failed to move account")
-			http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+			m.AddErrorMsg(r, "Failed to move category")
+			http.Redirect(w, r, "/categories", http.StatusSeeOther)
 			return
 		}
 
 		// Redirect
-		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
 	}
 }
 
-func (m *Repository) PostDeleteAccount1(w http.ResponseWriter, r *http.Request) {
+func (m *Repository) PostDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	// Parse form
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
 	}
 
-	// Get account id from route param
-	idParam := chi.URLParam(r, "accountId")
+	// Get category id from route param
+	idParam := chi.URLParam(r, "categoryId")
 	id, err := strconv.ParseInt(idParam, 10, 32)
 	if idParam == "" || err != nil {
-		m.AddErrorMsg(r, "Invalid account")
-		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		m.AddErrorMsg(r, "Invalid category")
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
 		return
 	}
 
@@ -237,20 +232,25 @@ func (m *Repository) PostDeleteAccount1(w http.ResponseWriter, r *http.Request) 
 	repo, ok := m.GetDB(r)
 	if !ok {
 		m.App.ErrorLog.Println("Failed to get DB repo")
-		m.AddErrorMsg(r, "Log in before deleting accounts")
+		m.AddErrorMsg(r, "Log in before deleting categories")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
-	// Delete account from database
-	err = repo.DeleteAccount(int(id))
+	// Delete category from database
+	err = repo.DeleteCategory(int(id))
 	if err != nil {
 		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Failed to delete account")
-		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		if strings.HasPrefix(err.Error(), "cant delete a category that is used") {
+			m.AddErrorMsg(r, "Can't delete category that is being used")
+		} else {
+			m.AddErrorMsg(r, "Failed to delete category")
+
+		}
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
 		return
 	}
 
 	// Add success message
-	m.AddFlashMsg(r, "Account deleted")
-	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+	m.AddFlashMsg(r, "Category deleted")
+	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
