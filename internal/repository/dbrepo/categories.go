@@ -110,6 +110,7 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 				period_end,
 				initial_amount,
 				current_amount,
+				can_be_deleted,
 				table_order
 			FROM view_categories_overview
 			ORDER BY table_order DESC;`
@@ -139,6 +140,7 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 			&periodEnd,
 			&category.InitialAmount,
 			&category.CurrentAmount,
+			&category.CanBeDeleted,
 			&category.TableOrder,
 		)
 		if err != nil {
@@ -221,7 +223,7 @@ func (m *sqliteDBRepo) EditAccountName1(id int, name string) error {
 	return nil
 }
 
-func (m *sqliteDBRepo) DeleteAccount1(id int) error {
+func (m *sqliteDBRepo) DeleteCategory(id int) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -233,19 +235,8 @@ func (m *sqliteDBRepo) DeleteAccount1(id int) error {
 	}
 	defer tx.Rollback()
 
-	// Get account
-	account, err := m.GetAccount(id)
-	if err != nil {
-		return err
-	}
-
 	// Setup query to delete account
-	stmt := `DELETE FROM accounts WHERE id=$1`
-
-	// If account is connected to expenses, don't delete it
-	if account.UsageCount > 0 {
-		return nil
-	}
+	stmt := `DELETE FROM procedure_remove_category WHERE id=$1`
 
 	// Execute query
 	_, err = tx.ExecContext(ctx, stmt, id)
@@ -262,7 +253,7 @@ func (m *sqliteDBRepo) TransferFunds1(fromAccount, toAccount models.Account, amo
 	return nil
 }
 
-func (m *sqliteDBRepo) ReorderAccount1(currentAccount models.Account, direction int) error {
+func (m *sqliteDBRepo) ReorderCategory(categoryid int, new_order int) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -275,14 +266,14 @@ func (m *sqliteDBRepo) ReorderAccount1(currentAccount models.Account, direction 
 	defer tx.Rollback()
 
 	// Setup query
-	stmt := `UPDATE procedure_change_accounts_order SET table_order = $1 WHERE id = $2`
+	stmt := `UPDATE procedure_change_categories_order SET table_order = $1 WHERE id = $2`
 
 	// Execute query
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		currentAccount.TableOrder+direction,
-		currentAccount.ID,
+		new_order,
+		categoryid,
 	)
 	if err != nil {
 		return err

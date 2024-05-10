@@ -36,6 +36,8 @@ type DatabaseRepo interface {
 	GetCategories() ([]models.Category, error)
 	GetCategoriesOverview() ([]models.CategoryOverview, error)
 	AddCategory(name string, budgetInput float64, spendingLimit float64, inputInterval int, inputPeriod int) error
+	ReorderCategory(categoryid int, new_order int) error
+	DeleteCategory(id int) error
 
 	// Time periods
 	GetTimePeriods() ([]models.TimePeriod, error)
