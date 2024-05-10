@@ -12,6 +12,7 @@ type DatabaseRepo interface {
 	// User methods
 	GetUser() (models.User, error)
 	Authenticate(testPassword string) (int, string, int, error)
+	ModifyFreeFunds(amount float64, toAccountId int) error
 
 	// Tags methods
 	GetTags() ([]models.Tag, error)

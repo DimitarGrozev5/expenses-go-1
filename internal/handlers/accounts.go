@@ -41,8 +41,8 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 	td := models.TemplateData{
 		Title: "Accounts",
 		Form: map[string]*forms.Form{
-			"add-account":    forms.New(nil),
-			"add-free-funds": forms.New(nil),
+			"add-account":       forms.New(nil),
+			"modify-free-funds": forms.New(nil),
 		},
 	}
 
@@ -125,6 +125,59 @@ func (m *Repository) PostNewAccount(w http.ResponseWriter, r *http.Request) {
 
 	// Add success message
 	m.AddFlashMsg(r, "Account added")
+	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+}
+
+func (m *Repository) PostModifyFreeFunds(w http.ResponseWriter, r *http.Request) {
+
+	// Parse form
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Get db repo
+	repo, ok := m.GetDB(r)
+	if !ok {
+		m.App.ErrorLog.Println("Cannot get DB repo")
+		m.AddErrorMsg(r, "Please login to view accounts")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
+	// Get form and validate fields
+	form := forms.New(r.PostForm)
+	form.Required("amount", "to-account")
+	form.IsFloat64("amount")
+	form.IsInt("to-account")
+
+	if !form.Valid() {
+
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"modify-free-funds": form,
+		})
+
+		// Redirect to expenses
+		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+
+		return
+	}
+
+	// Get data
+	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
+	toAccount, _ := strconv.ParseInt(form.Get("to-account"), 10, 64)
+
+	// Add expense to database
+	err = repo.ModifyFreeFunds(amount, int(toAccount))
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Failed to modify free funds")
+		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		return
+	}
+
+	// Add success message
+	m.AddFlashMsg(r, "Free funds updated")
 	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
 }
 

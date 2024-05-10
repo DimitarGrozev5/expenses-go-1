@@ -27,22 +27,22 @@ templ (d AccountsData) View() {
 						Error:    d.Form["add-account"].Errors.Get("name"),
 					})
 				}
-				@cards.AddCard("Add Free Funds", "/accounts/add-free-fund", d.DialogOpened("add-account")) {
+				@cards.AddCard("Add Free Funds", "/accounts/modify-free-funds", d.DialogOpened("modify-free-funds")) {
 					@inputs.CsrfInput(d.CSRFToken)
 					@inputs.TextInput(inputs.TextInputProps{
 						Label:    "Amount",
 						Name:     "amount",
 						Type:     "number",
 						Required: true,
-						Value:    d.Form["add-free-funds"].Get("amount"),
-						Error:    d.Form["add-free-funds"].Errors.Get("amount"),
+						Value:    d.Form["modify-free-funds"].Get("amount"),
+						Error:    d.Form["modify-free-funds"].Errors.Get("amount"),
 					})
 					@inputs.AccountSelect(d.Accounts, inputs.AccountSelectProps{
 						Label:    "To Account",
 						Name:     "to-account",
 						Required: true,
-						Value:    d.Form["add-free-funds"].Get("to-account"),
-						Error:    d.Form["add-free-funds"].Errors.Get("to-account"),
+						Value:    d.Form["modify-free-funds"].Get("to-account"),
+						Error:    d.Form["modify-free-funds"].Errors.Get("to-account"),
 					})
 				}
 			</div>

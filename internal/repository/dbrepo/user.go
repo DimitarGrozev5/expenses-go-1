@@ -73,3 +73,32 @@ func (m *sqliteDBRepo) Authenticate(testPassword string) (int, string, int, erro
 
 	return id, hashedPassword, dbVersion, nil
 }
+
+// Modify free funds
+func (m *sqliteDBRepo) ModifyFreeFunds(amount float64, toAccountId int) error {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query to insert account
+	stmt := `INSERT INTO procedure_add_free_funds (
+		amount,
+		to_account
+	) VALUES (
+		$1,
+		$2
+	)`
+
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		amount,
+		toAccountId,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
