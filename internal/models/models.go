@@ -99,6 +99,7 @@ type CategoryOverview struct {
 	PeriodEnd     time.Time
 	InitialAmount float64
 	CurrentAmount float64
+	CanBeDeleted  bool
 	TableOrder    int
 }
 
