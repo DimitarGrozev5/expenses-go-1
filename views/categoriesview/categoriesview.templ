@@ -53,9 +53,9 @@ templ (d CategoriesData) View() {
 					ErrorPeriod:    d.Form["add-category"].Errors.Get("input_period"),
 				})
 			}
-			// for index, category := range d.Categories {
-			// 	@AccountCard(category, index == 0, index == len(d.Categories)-1, d.CSRFToken /* , d.Tags, d.Form[fmt.Sprintf("edit-%d", expense.ID)] */)
-			// }
+			for index, category := range d.Categories {
+				@CategoryOverviewCard(category, index == 0, index == len(d.Categories)-1, d.CSRFToken)
+			}
 		}
 	}
 }
