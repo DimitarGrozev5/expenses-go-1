@@ -122,7 +122,7 @@ func Migrate(dbName string) error {
 	/*
 	 * View current expenses
 	 */
-	stmt = `CREATE TABLE view_current_expenses AS
+	stmt = `CREATE VIEW view_current_expenses AS
 				SELECT id, amount, date, from_account, from_category, created_at, updated_at
 				FROM expenses
 				WHERE from_period = null;`
@@ -752,6 +752,7 @@ func Migrate(dbName string) error {
 					datetime(c.last_input_date, concat(c.input_interval, p.period)) AS period_end,
 					c.initial_amount,
 					c.current_amount,
+					((SELECT COUNT(*) FROM archived_periods WHERE category=c.id) = 0) AS can_be_deleted,
 					c.table_order
 				FROM categories AS c
 				JOIN time_periods AS p ON c.input_period = p.id;`
@@ -893,7 +894,7 @@ func Migrate(dbName string) error {
 			BEGIN
 				SELECT
 					CASE
-						WHEN initial_amount > 0 THEN
+						WHEN (SELECT COUNT(*) FROM archived_periods WHERE category = old.id) > 0 THEN
 							RAISE (ABORT, 'cant delete a category that is used')
 					END
 				FROM categories
