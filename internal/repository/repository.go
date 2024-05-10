@@ -10,8 +10,8 @@ type DatabaseRepo interface {
 	Close() error
 
 	// User methods
-	GetUserByEmail(email string) (models.User, error)
-	Authenticate(email, testPassword string) (int, string, int, error)
+	GetUser() (models.User, error)
+	Authenticate(testPassword string) (int, string, int, error)
 
 	// Tags methods
 	GetTags() ([]models.Tag, error)

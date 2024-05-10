@@ -15,7 +15,7 @@ func (m *sqliteDBRepo) Close() error {
 }
 
 // Get user by id
-func (m *sqliteDBRepo) GetUserByEmail(email string) (models.User, error) {
+func (m *sqliteDBRepo) GetUser() (models.User, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -24,11 +24,11 @@ func (m *sqliteDBRepo) GetUserByEmail(email string) (models.User, error) {
 	var u models.User
 
 	// Define query
-	query := `SELECT id, email, password, db_version
-				FROM user WHERE email = $1`
+	query := `SELECT id, email, password, db_version, free_funds, created_at, updated_at
+				FROM user LIMIT 1`
 
 	// Get row
-	row := m.DB.QueryRowContext(ctx, query, email)
+	row := m.DB.QueryRowContext(ctx, query)
 
 	// Scan row into model
 	err := row.Scan(
@@ -36,6 +36,9 @@ func (m *sqliteDBRepo) GetUserByEmail(email string) (models.User, error) {
 		&u.Email,
 		&u.Password,
 		&u.DBVersion,
+		&u.FreeFunds,
+		&u.CreatedAt,
+		&u.UpdatedAt,
 	)
 
 	// Check for error
@@ -48,9 +51,9 @@ func (m *sqliteDBRepo) GetUserByEmail(email string) (models.User, error) {
 }
 
 // Authenticate user
-func (m *sqliteDBRepo) Authenticate(email, testPassword string) (int, string, int, error) {
+func (m *sqliteDBRepo) Authenticate(testPassword string) (int, string, int, error) {
 	// Get user
-	u, err := m.GetUserByEmail(email)
+	u, err := m.GetUser()
 	if err != nil {
 		return 0, "", 0, err
 	}
