@@ -104,6 +104,9 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 	query := `SELECT
 				id,
 				name,
+				budget_input,
+				input_interval,
+				input_period,
 				spending_limit,
 				spending_left,
 				period_start,
@@ -134,6 +137,9 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 		err = rows.Scan(
 			&category.ID,
 			&category.Name,
+			&category.BudgetInput,
+			&category.InputInterval,
+			&category.InputPriodId,
 			&category.SpendingLimit,
 			&category.SpendingLeft,
 			&category.PeriodStart,

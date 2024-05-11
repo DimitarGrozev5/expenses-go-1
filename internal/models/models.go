@@ -91,16 +91,24 @@ type Category struct {
 }
 
 type CategoryOverview struct {
-	ID            int
-	Name          string
+	ID   int
+	Name string
+
+	BudgetInput   float64
+	InputInterval int
+	InputPriodId  int
+
 	SpendingLimit float64
 	SpendingLeft  float64
-	PeriodStart   time.Time
-	PeriodEnd     time.Time
+
+	PeriodStart time.Time
+	PeriodEnd   time.Time
+
 	InitialAmount float64
 	CurrentAmount float64
-	CanBeDeleted  bool
-	TableOrder    int
+
+	CanBeDeleted bool
+	TableOrder   int
 }
 
 // Time periods

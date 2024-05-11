@@ -720,6 +720,8 @@ func Migrate(dbName string) error {
 					c.id,
 					c.name,
 					c.budget_input,
+					input_interval,
+					input_period,
 					c.last_input_date,
 					concat(c.input_interval, p.period) as input_interval,
 					c.spending_limit,
@@ -746,6 +748,7 @@ func Migrate(dbName string) error {
 				SELECT
 					c.id,
 					c.name,
+					c.budget_input,
 					c.spending_limit,
 					c.spending_left,
 					c.last_input_date AS period_start,
