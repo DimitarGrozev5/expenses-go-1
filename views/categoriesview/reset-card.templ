@@ -1,0 +1,17 @@
+package categoriesview
+
+import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
+
+templ ResetCategoriesCard(d CategoriesData) {
+	<button
+		class="toggle-dialog border border-primary-300 rounded-md bg-primary-200 text-primary-700 p-3 flex flex-col items-stretch cursor-pointer w-full"
+	>
+		<span class="material-symbols-outlined self-center text-4xl">device_reset</span>
+		<span class="text-xs">Reset Categories</span>
+	</button>
+	@dialogs.Dialog("/categories/reset", d.DialogOpened("reset-categories"), "Reset Categories", "Reset") {
+		<div class="categories-reset-form flex flex-col gap-1 items-stretch">
+		
+		</div>
+	}
+}

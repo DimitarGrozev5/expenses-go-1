@@ -15,44 +15,47 @@ type CategoriesData struct {
 templ (d CategoriesData) View() {
 	@layout.MainLayout(d.TemplateData) {
 		@layout.AuthLayout(layout.MainHeader(d.Title), layout.BottomTabs(d.CurrentURLPath)) {
-			@cards.AddCard("Add New Category", "/categories/add", d.DialogOpened("add-category")) {
-				@inputs.CsrfInput(d.CSRFToken)
-				@inputs.TextInput(inputs.TextInputProps{
-					Label:    "Name",
-					Name:     "name",
-					Type:     "text",
-					Required: true,
-					Value:    d.Form["add-category"].Get("name"),
-					Error:    d.Form["add-category"].Errors.Get("name"),
-				})
-				@inputs.TextInput(inputs.TextInputProps{
-					Label:    "Budget Input",
-					Name:     "budget_input",
-					Type:     "number",
-					Required: true,
-					Value:    d.Form["add-category"].Get("budget_input"),
-					Error:    d.Form["add-category"].Errors.Get("budget_input"),
-				})
-				@inputs.TextInput(inputs.TextInputProps{
-					Label:    "Spending Limit",
-					Name:     "spending_limit",
-					Type:     "number",
-					Required: true,
-					Value:    d.Form["add-category"].Get("spending_limit"),
-					Error:    d.Form["add-category"].Errors.Get("spending_limit"),
-				})
-				@inputs.TimePeriodInput(inputs.TimePeriodInputProps{
-					Label:          "Input Period",
-					IntervalName:   "input_interval",
-					PeriodName:     "input_period",
-					Required:       true,
-					Interval:       d.Form["add-category"].Get("input_interval"),
-					SelectedPeriod: d.Form["add-category"].Get("input_period"),
-					Periods:        d.TimePeriods,
-					ErrorInterval:  d.Form["add-category"].Errors.Get("input_interval"),
-					ErrorPeriod:    d.Form["add-category"].Errors.Get("input_period"),
-				})
-			}
+			<div class="flex flex-row items-stretch gap-2">
+				@cards.AddCard("Add New Category", "/categories/add", d.DialogOpened("add-category")) {
+					@inputs.CsrfInput(d.CSRFToken)
+					@inputs.TextInput(inputs.TextInputProps{
+						Label:    "Name",
+						Name:     "name",
+						Type:     "text",
+						Required: true,
+						Value:    d.Form["add-category"].Get("name"),
+						Error:    d.Form["add-category"].Errors.Get("name"),
+					})
+					@inputs.TextInput(inputs.TextInputProps{
+						Label:    "Budget Input",
+						Name:     "budget_input",
+						Type:     "number",
+						Required: true,
+						Value:    d.Form["add-category"].Get("budget_input"),
+						Error:    d.Form["add-category"].Errors.Get("budget_input"),
+					})
+					@inputs.TextInput(inputs.TextInputProps{
+						Label:    "Spending Limit",
+						Name:     "spending_limit",
+						Type:     "number",
+						Required: true,
+						Value:    d.Form["add-category"].Get("spending_limit"),
+						Error:    d.Form["add-category"].Errors.Get("spending_limit"),
+					})
+					@inputs.TimePeriodInput(inputs.TimePeriodInputProps{
+						Label:          "Input Period",
+						IntervalName:   "input_interval",
+						PeriodName:     "input_period",
+						Required:       true,
+						Interval:       d.Form["add-category"].Get("input_interval"),
+						SelectedPeriod: d.Form["add-category"].Get("input_period"),
+						Periods:        d.TimePeriods,
+						ErrorInterval:  d.Form["add-category"].Errors.Get("input_interval"),
+						ErrorPeriod:    d.Form["add-category"].Errors.Get("input_period"),
+					})
+				}
+				@ResetCategoriesCard(d)
+			</div>
 			for index, category := range d.Categories {
 				@CategoryOverviewCard(category, index == 0, index == len(d.Categories)-1, d.CSRFToken)
 			}

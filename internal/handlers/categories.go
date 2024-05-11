@@ -42,7 +42,8 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 	td := models.TemplateData{
 		Title: "Categories",
 		Form: map[string]*forms.Form{
-			"add-category": forms.New(nil),
+			"add-category":     forms.New(nil),
+			"reset-categories": forms.New(nil),
 		},
 	}
 
