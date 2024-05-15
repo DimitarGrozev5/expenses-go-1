@@ -1597,7 +1597,22 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add too much money to category
-			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (200, 1)`
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (
+						amount,
+						category,
+						budget_input,
+						input_interval,
+						input_period,
+						spending_limit
+					) VALUES (
+						200,
+						1,
+						150,
+						2,
+						2,
+						100
+
+					)`
 			_, err = db.Exec(stmt)
 			if err == nil {
 				t.Error("shouldn't be able to add to category more money than in free funds")
@@ -1605,7 +1620,22 @@ func TestMigration(t *testing.T) {
 			}
 
 			//////////////////////////////////////////////////////////////////////////////////////////////// Add normal amount to category
-			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (60, 1)`
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (
+				amount,
+				category,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit
+			) VALUES (
+				60,
+				1,
+				150,
+				2,
+				2,
+				100
+
+			)`
 			_, err = db.Exec(stmt)
 			if err != nil {
 				t.Error("couldn't add money to category", err)
@@ -1643,8 +1673,24 @@ func TestMigration(t *testing.T) {
 				t.Errorf("category initial amount is wrong; expected 60; received %f", categories[0].InitialAmount)
 				return
 			}
-			if categories[0].SpendingLeft != 80 {
-				t.Errorf("category spending left is wrong; expected 80; received %f", categories[0].SpendingLeft)
+			if categories[0].BudgetInput != 150 {
+				t.Errorf("category initial amount is wrong; expected 150; received %f", categories[0].BudgetInput)
+				return
+			}
+			// if categories[0].InputInterval != 2 {
+			// 	t.Errorf("category initial amount is wrong; expected 2; received %f", categories[0].InputInterval)
+			// 	return
+			// }
+			// if categories[0].InputPeriod != 60 {
+			// 	t.Errorf("category initial amount is wrong; expected 60; received %f", categories[0].InputPeriod)
+			// 	return
+			// }
+			if categories[0].SpendingLimit != 100 {
+				t.Errorf("category initial amount is wrong; expected 100; received %f", categories[0].SpendingLimit)
+				return
+			}
+			if categories[0].SpendingLeft != 100 {
+				t.Errorf("category spending left is wrong; expected 100; received %f", categories[0].SpendingLeft)
 				return
 			}
 
@@ -1675,13 +1721,28 @@ func TestMigration(t *testing.T) {
 				t.Errorf("category current amount is wrong; expected 50; received %f", categories[0].CurrentAmount)
 				return
 			}
-			if categories[0].SpendingLeft != 70 {
-				t.Errorf("category spending left is wrong; expected 70; received %f", categories[0].SpendingLeft)
+			if categories[0].SpendingLeft != 90 {
+				t.Errorf("category spending left is wrong; expected 90; received %f", categories[0].SpendingLeft)
 				return
 			}
 
 			// Reset category again
-			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (20, 1)`
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (
+				amount,
+				category,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit
+			) VALUES (
+				20,
+				1,
+				150,
+				2,
+				2,
+				100
+
+			)`
 			_, err = db.Exec(stmt)
 			if err != nil {
 				t.Error("couldn't add money to category", err)
@@ -1723,8 +1784,8 @@ func TestMigration(t *testing.T) {
 				t.Errorf("category current amount is wrong; expected 70; received %f", categories[0].CurrentAmount)
 				return
 			}
-			if categories[0].SpendingLeft != 80 {
-				t.Errorf("category spending left is wrong; expected 80; received %f", categories[0].SpendingLeft)
+			if categories[0].SpendingLeft != 100 {
+				t.Errorf("category spending left is wrong; expected 100; received %f", categories[0].SpendingLeft)
 				return
 			}
 
@@ -1791,8 +1852,38 @@ func TestMigration(t *testing.T) {
 			}
 
 			//////////////////////////////////////////////////////////////////////////////////////////////// Add normal amount to categories
-			stmt = `INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (50, 1);
-					INSERT INTO procedure_fund_category_and_reset_period (amount, category) VALUES (50, 2)`
+			stmt = `INSERT INTO procedure_fund_category_and_reset_period (
+				amount,
+				category,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit
+			) VALUES (
+				50,
+				1,
+				100,
+				1,
+				2,
+				80
+
+			);
+					INSERT INTO procedure_fund_category_and_reset_period (
+				amount,
+				category,
+				budget_input,
+				input_interval,
+				input_period,
+				spending_limit
+			) VALUES (
+				50,
+				2,
+				100,
+				1,
+				2,
+				80
+
+			)`
 			_, err = db.Exec(stmt)
 			if err != nil {
 				t.Error("couldn't add money to category", err)

@@ -720,8 +720,6 @@ func Migrate(dbName string) error {
 					c.id,
 					c.name,
 					c.budget_input,
-					input_interval,
-					input_period,
 					c.last_input_date,
 					concat(c.input_interval, p.period) as input_interval,
 					c.spending_limit,
@@ -749,6 +747,8 @@ func Migrate(dbName string) error {
 					c.id,
 					c.name,
 					c.budget_input,
+					c.input_interval,
+					c.input_period,
 					c.spending_limit,
 					c.spending_left,
 					c.last_input_date AS period_start,
@@ -1003,7 +1003,14 @@ func Migrate(dbName string) error {
 	 *
 	 */
 	stmt = `CREATE VIEW procedure_fund_category_and_reset_period AS
-				SELECT current_amount as amount, id as category FROM categories;
+				SELECT
+					current_amount as amount,
+					id as category,
+					budget_input,
+					input_interval,
+					input_period,
+					spending_limit
+				FROM categories;
 				
 			CREATE TRIGGER trigger__procedure_fund_category_and_reset_period_insert
 				INSTEAD OF INSERT
@@ -1045,7 +1052,11 @@ func Migrate(dbName string) error {
 				UPDATE categories SET
 					initial_amount = current_amount + new.amount,
 					current_amount = current_amount + new.amount,
-					spending_left = spending_limit,
+					budget_input = new.budget_input,
+					input_interval = new.input_interval,
+					input_period = new.input_period,
+					spending_limit = new.spending_limit,
+					spending_left = new.spending_limit,
 					updated_at = datetime('now')
 				WHERE id = new.category;
 
