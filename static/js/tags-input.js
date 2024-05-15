@@ -85,7 +85,7 @@ window.addEventListener("load", () => {
      * Selected tags init value
      * @type {Set<string>}
      */
-    const selectedTagsInitValue = new Map();
+    const selectedTagsInitValue = new Set();
 
     // Selected tags
     const vSelectedTags = Value(selectedTagsInitValue);

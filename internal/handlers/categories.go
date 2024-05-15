@@ -38,12 +38,21 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
+	// Set default unused categories
+	defaultUnused := make([]string, 0, len(categories))
+	for _, category := range categories {
+		defaultUnused = append(defaultUnused, categoryToFormString(category))
+	}
+
+	// Set category reset form
+	resetForm := forms.NewFromMap(map[string]string{"unused-categories": strings.Join(defaultUnused, ";"), "used-categories": ""})
+
 	// Get template data
 	td := models.TemplateData{
 		Title: "Categories",
 		Form: map[string]*forms.Form{
 			"add-category":     forms.New(nil),
-			"reset-categories": forms.New(nil),
+			"reset-categories": resetForm,
 		},
 	}
 
@@ -254,4 +263,21 @@ func (m *Repository) PostDeleteCategory(w http.ResponseWriter, r *http.Request) 
 	// Add success message
 	m.AddFlashMsg(r, "Category deleted")
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+}
+
+func categoryToFormString(c models.CategoryOverview) string {
+	return fmt.Sprintf(
+		"%d,%s,%f,%d,%d,%s,%f,%d,%d,%f,%f",
+		c.ID,
+		c.Name,
+		c.BudgetInput,
+		c.InputInterval,
+		c.InputPriodId,
+		c.InputPeriodCaption,
+		c.SpendingLimit,
+		c.PeriodStart.Unix(),
+		c.PeriodEnd.Unix(),
+		c.InitialAmount,
+		c.CurrentAmount,
+	)
 }
