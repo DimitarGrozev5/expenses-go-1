@@ -749,6 +749,7 @@ func Migrate(dbName string) error {
 					c.budget_input,
 					c.input_interval,
 					c.input_period,
+					(CONCAT(c.input_interval, ' ', p.caption)) AS period_caption,
 					c.spending_limit,
 					c.spending_left,
 					c.last_input_date AS period_start,
