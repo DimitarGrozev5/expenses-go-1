@@ -42,13 +42,13 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get categories
-	// categories, err := repo.GetCategories()
-	// if err != nil {
-	// 	m.App.ErrorLog.Println(err)
-	// 	m.AddErrorMsg(r, "Error getting expenses")
-	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	// 	return
-	// }
+	_, err = repo.GetCategories()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
+	}
 
 	// If there are no categories redirect to categories page and prompt user to create a category
 	// if len(categories) == 0 {

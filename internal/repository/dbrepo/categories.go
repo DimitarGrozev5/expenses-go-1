@@ -40,7 +40,7 @@ func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
 				name,
 				budget_input,
 				last_input_date,
-				input_interval,
+				next_input_date,
 				spending_limit,
 				spending_left,
 				initial_amount,
@@ -66,12 +66,15 @@ func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
 		// Define base models
 		var category models.Category
 
+		// Store duration
+		var nextInputDate string
+
 		err = rows.Scan(
 			&category.ID,
 			&category.Name,
 			&category.BudgetInput,
 			&category.LastInputDate,
-			&category.InputInterval,
+			&nextInputDate,
 			&category.SpendingLimit,
 			&category.SpendingLeft,
 			&category.InitialAmount,
@@ -83,6 +86,13 @@ func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Parse duration
+		t, err := time.Parse("2006-01-02 15:04:05", nextInputDate)
+		if err != nil {
+			return nil, err
+		}
+		category.InputInterval = t.Sub(category.LastInputDate)
 
 		// Add to accounts
 		categories = append(categories, category)
@@ -249,28 +259,6 @@ func (m *sqliteDBRepo) AddCategory(name string, budgetInput float64, spendingLim
 	return nil
 }
 
-func (m *sqliteDBRepo) EditAccountName1(id int, name string) error {
-	// Define context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Define query to insert account
-	stmt := `UPDATE procedure_account_update_name SET name = $1 WHERE id = $2`
-
-	// Execute query
-	_, err := m.DB.ExecContext(
-		ctx,
-		stmt,
-		name,
-		id,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *sqliteDBRepo) DeleteCategory(id int) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -294,10 +282,6 @@ func (m *sqliteDBRepo) DeleteCategory(id int) error {
 
 	tx.Commit()
 
-	return nil
-}
-
-func (m *sqliteDBRepo) TransferFunds1(fromAccount, toAccount models.Account, amount float64) error {
 	return nil
 }
 
