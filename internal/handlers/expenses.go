@@ -42,7 +42,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get categories
-	_, err = repo.GetCategories()
+	categories, err := repo.GetCategories()
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting expenses")
@@ -51,11 +51,11 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If there are no categories redirect to categories page and prompt user to create a category
-	// if len(categories) == 0 {
-	// 	m.AddWarningMsg(r, "You have to create a Budget Category before you can add Expenses")
-	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
-	// 	return
-	// }
+	if len(categories) == 0 {
+		m.AddWarningMsg(r, "You have to create a Budget Category before you can add Expenses")
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
+		return
+	}
 
 	// Get all expenses
 	expenses, err := repo.GetExpenses()
