@@ -1,0 +1,16 @@
+package dialogs
+
+templ ResetCategoryDialog() {
+	<dialog class="dialog w-full p-4 rounded-lg backdrop:bg-black backdrop:opacity-50">
+		<form method="post" class="reset-form w-full mb-0 rounded-lg">
+			<div class="flex flex-row items-stretch justify-center text-primary-800 font-semibold mb-4 text-lg">Modify & Reset Category</div>
+			<div class="flex flex-col items-stretch gap-1 mb-4">
+				{ children... }
+			</div>
+			<div class="flex flex-row justify-end items-center gap-3">
+				<button class="dialog-confirm text-base px-2.5 py-1 border border-primary-400 rounded-md bg-primary-200">Save</button>
+				<button class="dialog-close text-base px-2.5 py-1" type="button" autofocus>Cancel</button>
+			</div>
+		</form>
+	</dialog>
+}

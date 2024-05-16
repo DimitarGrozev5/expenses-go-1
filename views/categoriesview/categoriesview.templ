@@ -10,6 +10,7 @@ type CategoriesData struct {
 	models.TemplateData
 	Categories  []models.CategoryOverview
 	TimePeriods []models.TimePeriod
+	FreeFunds   float64
 }
 
 templ (d CategoriesData) View() {

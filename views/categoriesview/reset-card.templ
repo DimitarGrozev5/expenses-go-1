@@ -1,6 +1,25 @@
 package categoriesview
 
 import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
+import "github.com/dimitargrozev5/expenses-go-1/internal/forms"
+import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
+import "github.com/dimitargrozev5/expenses-go-1/internal/models"
+import "fmt"
+import "strings"
+
+func resetCategoriesDialogOpened(form map[string]*forms.Form) bool {
+	return len(form["reset-categories"].Get("used-categories")) > 0
+}
+
+func getTimePeriods(periods []models.TimePeriod) string {
+	ps := make([]string, 0, len(periods))
+
+	for _, period := range periods {
+		ps = append(ps, fmt.Sprintf("%d,%s", period.ID, period.Caption))
+	}
+
+	return strings.Join(ps, ";")
+}
 
 templ ResetCategoriesCard(d CategoriesData) {
 	<button
@@ -9,8 +28,12 @@ templ ResetCategoriesCard(d CategoriesData) {
 		<span class="material-symbols-outlined self-center text-4xl">device_reset</span>
 		<span class="text-xs">Reset Categories</span>
 	</button>
-	@dialogs.Dialog("/categories/reset", d.DialogOpened("reset-categories"), "Reset Categories", "Reset") {
-		<div class="categories-reset-form flex flex-col gap-2 items-stretch">
+	@dialogs.Dialog("/categories/reset", resetCategoriesDialogOpened(d.Form), "Reset Categories", "Reset") {
+		<div class="categories-reset-form flex flex-col gap-2 items-stretch" data-periods={ getTimePeriods(d.TimePeriods) }>
+			<div class="flex flex-row items-end gap-2 border border-primary-500 rounded-md p-2">
+				<span class="text-2xl font-bold">Free funds: </span>
+				<span class="free-funds text-2xl font-semibold">{ fmt.Sprintf("%0.2f", d.FreeFunds) }</span>
+			</div>
 			<div class="flex flex-col items-stretch border border-primary-500 rounded-md p-2 max-h-[35vh] overflow-auto">
 				<label for="unused-categories">Categories:</label>
 				<input
@@ -20,14 +43,52 @@ templ ResetCategoriesCard(d CategoriesData) {
 					type="text"
 					value={ d.Form["reset-categories"].Get("unused-categories") }
 				/>
-				<div class="unused-categories-container">
+				<div class="unused-categories-container flex flex-col items-stretch gap-2">
 					<template class="unused-category-card-template">
-						<div class="px-2 py-1.5 border border-primary-500 rounded-full flex flex-row items-center justify-between gap-2">
-							<div class="name"></div>
-							<div class="amount"></div>
-							<div class="input"></div>
-							<div class="spending-limit"></div>
-							<div class="period"></div>
+						<div>
+							<div class="toggle-dialog px-4 py-1.5 border border-primary-500 bg-primary-100 rounded-xl flex flex-row items-center justify-between gap-2">
+								<div class="name text-xl font-semibold"></div>
+								<div class="amount text-lg"></div>
+								<div class="flex flex-col items-stretch">
+									<div class="flex flex-row items-center gap-0.5">
+										<span class="material-symbols-outlined text-green-700 text-base">trending_up</span>
+										<div class="input flex-1 text-right text-sm"></div>
+									</div>
+									<div class="flex flex-row items-center gap-0.5">
+										<span class="material-symbols-outlined text-red-700 text-base">trending_down</span>
+										<div class="spending-limit flex-1 text-right text-sm"></div>
+									</div>
+								</div>
+								<div class="period text-xs"></div>
+							</div>
+							@dialogs.ResetCategoryDialog() {
+								<div class="name text-2xl font-semibold"></div>
+								@inputs.TextInput(inputs.TextInputProps{
+									Label:    "Add Amount",
+									Name:     "add_amount",
+									Type:     "number",
+									Required: true,
+								})
+								@inputs.TextInput(inputs.TextInputProps{
+									Label:    "Edit Budget Input",
+									Name:     "budget_input",
+									Type:     "number",
+									Required: true,
+								})
+								@inputs.TextInput(inputs.TextInputProps{
+									Label:    "Edit Spending Limit",
+									Name:     "spending_limit",
+									Type:     "number",
+									Required: true,
+								})
+								@inputs.TimePeriodInput(inputs.TimePeriodInputProps{
+									Label:        "Edit Input Period",
+									IntervalName: "input_interval",
+									PeriodName:   "input_period",
+									Required:     true,
+									Periods:      d.TimePeriods,
+								})
+							}
 						</div>
 					</template>
 				</div>
@@ -41,9 +102,26 @@ templ ResetCategoriesCard(d CategoriesData) {
 					type="text"
 					value={ d.Form["reset-categories"].Get("used-categories") }
 				/>
-				<div class="used-categories-container">
+				<div class="used-categories-container flex flex-col items-stretch gap-2">
 					<template class="used-category-card-template">
-						<div class="px-2 py-1.5 border border-primary-500 rounded-full"></div>
+						<div class="px-4 py-1.5 border border-primary-500 bg-primary-100 rounded-xl flex flex-row items-center justify-between gap-2">
+							<div class="name text-xl font-semibold"></div>
+							<div class="flex flex-col items-stretch">
+								<div class="amount-current text-lg"></div>
+								<span class="text-xs text-green-500">(+<span class="amount-add"></span>)</span>
+							</div>
+							<div class="flex flex-col items-stretch">
+								<div class="flex flex-row items-center gap-0.5">
+									<span class="material-symbols-outlined text-green-700 text-sm">trending_up</span>
+									<div class="input flex-1 text-right"></div>
+								</div>
+								<div class="flex flex-row items-center gap-0.5">
+									<span class="material-symbols-outlined text-red-700 text-sm">trending_down</span>
+									<div class="spending-limit flex-1 text-right"></div>
+								</div>
+							</div>
+							<div class="period text-xs"></div>
+						</div>
 					</template>
 				</div>
 			</div>

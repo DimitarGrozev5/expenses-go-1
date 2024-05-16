@@ -38,6 +38,14 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
+	// Get user data
+	user, err := repo.GetUser()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting categories")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
 	// Set default unused categories
 	defaultUnused := make([]string, 0, len(categories))
 	for _, category := range categories {
@@ -81,6 +89,7 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 		TemplateData: td,
 		Categories:   categories,
 		TimePeriods:  periods,
+		FreeFunds:    user.FreeFunds,
 	}
 
 	// Render view
