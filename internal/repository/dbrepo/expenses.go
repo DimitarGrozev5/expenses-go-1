@@ -86,7 +86,7 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 }
 
 // Add expense
-func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
+func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -99,13 +99,13 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 	defer tx.Rollback()
 
 	// Update tags
-	exisitingTags, err := m.UpdateTags(expense.Tags, tx)
+	exisitingTags, err := m.UpdateTags(tags, tx)
 	if err != nil {
 		return err
 	}
 
 	// Define query to insert expense
-	stmt := `INSERT INTO expenses(amount, date, from_account) VALUES($1, $2, $3)`
+	stmt := `INSERT INTO procedure_new_expense(amount, date, from_account, from_category) VALUES($1, $2, $3, $4)`
 
 	// Execute query
 	result, err := tx.ExecContext(
@@ -113,7 +113,8 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 		stmt,
 		expense.Amount,
 		expense.Date,
-		expense.FromAccount.ID,
+		expense.FromAccountId,
+		expense.FromCategoryId,
 	)
 	if err != nil {
 		return err
@@ -137,7 +138,7 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense) error {
 }
 
 // Edit expense
-func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
+func (m *sqliteDBRepo) EditExpense(expense models.Expense, tags []string) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -150,7 +151,7 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 	defer tx.Rollback()
 
 	// Create query to remove all expense tags
-	stmt := `DELETE FROM expense_tags WHERE expense_id = $1`
+	stmt := `DELETE FROM procedure_unlink_tags_from_expense WHERE expense_id = $1`
 
 	// Delete relations
 	_, err = tx.ExecContext(
@@ -163,17 +164,17 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 	}
 
 	// Update tags
-	tags, err := m.UpdateTags(expense.Tags, tx)
+	allTags, err := m.UpdateTags(tags, tx)
 	if err != nil {
 		return err
 	}
 
 	// Update expense
-	stmt = `UPDATE expenses SET
+	stmt = `UPDATE procedure_update_expense SET
 				amount = $1,
 				date = $2,
 				from_account = $3,
-				updated_at = $4
+				from_category = $4
 			WHERE id = $5`
 
 	// Update expense
@@ -182,8 +183,8 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 		stmt,
 		expense.Amount,
 		expense.Date,
-		expense.FromAccount.ID,
-		time.Now(),
+		expense.FromAccountId,
+		expense.FromCategoryId,
 		expense.ID,
 	)
 	if err != nil {
@@ -191,7 +192,7 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense) error {
 	}
 
 	// Add relations
-	err = m.AddExpenseTags(expense.ID, tags, tx)
+	err = m.AddExpenseTags(expense.ID, allTags, tx)
 	if err != nil {
 		return err
 	}
@@ -208,7 +209,7 @@ func (m *sqliteDBRepo) DeleteExpense(id int) error {
 	defer cancel()
 
 	// Define query
-	stmt := `DELETE FROM expenses WHERE id=$1`
+	stmt := `DELETE FROM procedure_remove_expense WHERE id=$1`
 
 	// Execute query
 	_, err := m.DB.ExecContext(
@@ -268,7 +269,7 @@ func (m *sqliteDBRepo) AddExpenseTags(expenseId int, tags []models.Tag, etx *sql
 	}
 
 	// Define query to insert relations
-	stmt := `INSERT INTO expense_tags(expense_id, tag_id) VALUES `
+	stmt := `INSERT INTO procedure_link_tag_to_expense(expense_id, tag_id) VALUES `
 
 	// Append templates
 	stmt = fmt.Sprintf("%s%s", stmt, strings.Join(tagValuesTmpl, ","))

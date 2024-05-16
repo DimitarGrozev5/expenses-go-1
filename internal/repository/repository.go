@@ -16,12 +16,12 @@ type DatabaseRepo interface {
 
 	// Tags methods
 	GetTags() ([]models.Tag, error)
-	UpdateTags(tags []models.Tag, etx *sql.Tx) ([]models.Tag, error)
+	UpdateTags(tags []string, etx *sql.Tx) ([]models.Tag, error)
 
 	// Expense methods
 	GetExpenses() ([]models.Expense, error)
-	AddExpense(expense models.Expense) error
-	EditExpense(expense models.Expense) error
+	AddExpense(expense models.Expense, tags []string) error
+	EditExpense(expense models.Expense, tags []string) error
 	DeleteExpense(id int) error
 
 	// Account methods

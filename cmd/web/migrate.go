@@ -392,14 +392,14 @@ func Migrate(dbName string) error {
 			END;
 			
 			
-			CREATE VIEW procedure_unlink_tag_from_expense AS
-				SELECT id, expense_id, tag_id FROM expense_tags;
+			CREATE VIEW procedure_unlink_tags_from_expense AS
+				SELECT expense_id FROM expense_tags;
 				
-			CREATE TRIGGER trigger__procedure_unlink_tag_from_expense__remove
+			CREATE TRIGGER trigger__procedure_unlink_tags_from_expense__remove
 				INSTEAD OF DELETE
-				ON procedure_unlink_tag_from_expense
+				ON procedure_unlink_tags_from_expense
 			BEGIN
-				DELETE FROM expense_tags WHERE id = old.id;
+				DELETE FROM expense_tags WHERE expense_id = old.expense_id;
 			END;`
 
 	// Execute query

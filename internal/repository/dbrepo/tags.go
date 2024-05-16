@@ -52,7 +52,7 @@ func (m *sqliteDBRepo) GetTags() ([]models.Tag, error) {
 }
 
 // Update multiple tags
-func (m *sqliteDBRepo) UpdateTags(tags []models.Tag, etx *sql.Tx) ([]models.Tag, error) {
+func (m *sqliteDBRepo) UpdateTags(tags []string, etx *sql.Tx) ([]models.Tag, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -75,78 +75,71 @@ func (m *sqliteDBRepo) UpdateTags(tags []models.Tag, etx *sql.Tx) ([]models.Tag,
 		return nil, fmt.Errorf("you must have at least one tag")
 	}
 
-	// Divide tags in to old and new
-	newTagsData := make([]models.Tag, 0, len(tags)*2/3)
-	exisitingTags := make([]models.Tag, 0, len(tags))
+	// Store VALUES template
+	tagValuesTmpl := make([]string, 0, len(tags))
 
-	// Go through tags
-	for _, tag := range tags {
+	// Store values
+	tagValues := make([]interface{}, 0, len(tags)*3)
 
-		// If tag id is not set, it's a new tag
-		if tag.ID == -1 {
-			newTagsData = append(newTagsData, tag)
-		} else {
-			exisitingTags = append(exisitingTags, tag)
-		}
+	// Loop trough new tags
+	for i, tag := range tags {
+
+		// Define template
+		tmpl := fmt.Sprintf("($%d)", i+1)
+
+		// Add to templates
+		tagValuesTmpl = append(tagValuesTmpl, tmpl)
+
+		// Add tp values
+		tagValues = append(tagValues, tag)
 	}
 
-	// If there are new tags, add them to DB
-	if len(newTagsData) > 0 {
-		// Store VALUES template
-		tagValuesTmpl := make([]string, 0, len(newTagsData))
+	// Define query
+	stmt := `INSERT INTO procedure_insert_tag(name) VALUES `
 
-		// Store values
-		tagValues := make([]interface{}, 0, len(newTagsData)*3)
+	// Append templates
+	stmt = fmt.Sprintf("%s%s", stmt, strings.Join(tagValuesTmpl, ","))
 
-		// Loop trough new tags
-		for i, tag := range newTagsData {
+	// Insert tags
+	_, err := tx.QueryContext(
+		ctx,
+		stmt,
+		tagValues...,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-			// Define template
-			tmpl := fmt.Sprintf("($%d)", i+1)
+	// Get tags
+	query := `SELECT FROM tags (id, name, usage_count) WHERE name IN ($1)`
 
-			// Add to templates
-			tagValuesTmpl = append(tagValuesTmpl, tmpl)
+	// Get rows
+	rows, err := m.DB.QueryContext(ctx, query, strings.Join(tags, ","))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-			// Add tp values
-			tagValues = append(tagValues, tag.Name)
-		}
+	var allTags []models.Tag
 
-		// Define query
-		stmt := `INSERT INTO tags(name) VALUES `
+	// Scan rows
+	for rows.Next() {
+		// Define base model
+		var tag models.Tag
 
-		// Append templates
-		stmt = fmt.Sprintf("%s%s RETURNING id, name, usage_count", stmt, strings.Join(tagValuesTmpl, ","))
-
-		// Insert tags
-		rows, err := tx.QueryContext(
-			ctx,
-			stmt,
-			tagValues...,
-		)
+		err = rows.Scan(&tag.ID, &tag.Name, &tag.UsageCount)
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
 
-		// Scan rows
-		for rows.Next() {
-			// Define base model
-			var tag models.Tag
-
-			err = rows.Scan(&tag.ID, &tag.Name, &tag.UsageCount)
-			if err != nil {
-				return nil, err
-			}
-
-			// Add tag to existing tags
-			exisitingTags = append(exisitingTags, tag)
-		}
-		err = rows.Err()
-		if err != nil {
-			return nil, err
-		}
+		// Add tag to existing tags
+		allTags = append(allTags, tag)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	// Return all tags
-	return exisitingTags, nil
+	return allTags, nil
 }

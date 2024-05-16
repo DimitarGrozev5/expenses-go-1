@@ -162,50 +162,17 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
-	// Get all tags
-	allTags, err := repo.GetTags()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting data")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
-
 	// Split tags field
-	split := re.Split(form.Get("tags"), -1)
-
-	// Get tags
-	tags := make([]models.Tag, 0, len(split))
-	for _, tagName := range split {
-
-		// If tag is in all tags
-		tagSet := false
-		for _, tag := range allTags {
-			if tag.Name == tagName {
-				tags = append(tags, tag)
-				tagSet = true
-				break
-			}
-		}
-
-		// If tag is not in all tags
-		if !tagSet {
-			tags = append(tags, models.Tag{
-				ID:         -1,
-				Name:       tagName,
-				UsageCount: 1,
-			})
-		}
-	}
+	tags := re.Split(form.Get("tags"), -1)
 
 	expense := models.Expense{
 		Amount:      amount,
-		Tags:        tags,
 		Date:        date,
 		FromAccount: models.Account{ID: int(fromExpense)},
 	}
 
 	// Add expense to database
-	err = repo.AddExpense(expense)
+	err = repo.AddExpense(expense, tags)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Failed to add expense")
@@ -272,51 +239,18 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
-	// Get all tags
-	allTags, err := repo.GetTags()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting data")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
-
 	// Split tags field
-	split := re.Split(form.Get("tags"), -1)
-
-	// Get tags
-	tags := make([]models.Tag, 0, len(split))
-	for _, tagName := range split {
-
-		// If tag is in all tags
-		tagSet := false
-		for _, tag := range allTags {
-			if tag.Name == tagName {
-				tags = append(tags, tag)
-				tagSet = true
-				break
-			}
-		}
-
-		// If tag is not in all tags
-		if !tagSet {
-			tags = append(tags, models.Tag{
-				ID:         -1,
-				Name:       tagName,
-				UsageCount: 1,
-			})
-		}
-	}
+	tags := re.Split(form.Get("tags"), -1)
 
 	expense := models.Expense{
 		ID:          int(id),
 		Amount:      amount,
-		Tags:        tags,
 		Date:        date,
 		FromAccount: models.Account{ID: int(fromExpense)},
 	}
 
 	// Add expense to database
-	err = repo.EditExpense(expense)
+	err = repo.EditExpense(expense, tags)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Failed to edit expense")
