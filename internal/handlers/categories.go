@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -273,6 +274,91 @@ func (m *Repository) PostDeleteCategory(w http.ResponseWriter, r *http.Request) 
 	m.AddFlashMsg(r, "Category deleted")
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
+func (m *Repository) PostResetCategories1(w http.ResponseWriter, r *http.Request) {
+
+	m.AddErrorMsg(r, "Test redirect")
+	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+}
+
+func (m *Repository) PostResetCategories(w http.ResponseWriter, r *http.Request) {
+
+	// Parse form
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Get db repo
+	repo, ok := m.GetDB(r)
+	if !ok {
+		m.App.ErrorLog.Println("Cannot get DB repo")
+		m.AddErrorMsg(r, "Please login to view expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
+	// Get form and validate fields
+	form := forms.New(r.PostForm)
+	form.Required("used-categories")
+
+	// Get used categories string
+	usedCategoriesString := form.Get("used-categories")
+
+	if !form.Valid() || len(usedCategoriesString) == 0 {
+
+		// Push form to session
+		m.AddForms(r, map[string]*forms.Form{
+			"reset-categories": form,
+		})
+
+		// Redirect to categories
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
+
+		return
+	}
+
+	// Get categories for reset
+	cats := strings.Split(usedCategoriesString, ";")
+
+	// Loop through categories
+	for _, cat := range cats {
+		// Get relevant data
+		category, err := formStringToCategory(cat)
+		if err != nil {
+			// Push form to session
+			m.AddForms(r, map[string]*forms.Form{
+				"reset-categories": form,
+			})
+
+			// Add eror message
+			m.AddErrorMsg(r, "Error parsing data")
+
+			// Redirect to categories
+			http.Redirect(w, r, "/categories", http.StatusSeeOther)
+
+			return
+		}
+
+		amount := category.InitialAmount
+		categoryId := category.ID
+		budgetInput := category.BudgetInput
+		inputInterval := category.InputInterval
+		inputPeriod := category.InputPeriodId
+		spendingLimit := category.SpendingLimit
+
+		// Add category to database
+		err = repo.ResetCategories(amount, categoryId, budgetInput, inputInterval, inputPeriod, spendingLimit)
+		if err != nil {
+			m.App.ErrorLog.Println(err)
+			m.AddErrorMsg(r, "Failed to add category")
+			http.Redirect(w, r, "/categories", http.StatusSeeOther)
+			return
+		}
+	}
+
+	// Add success message
+	m.AddFlashMsg(r, "Categories reset")
+	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+}
 
 func categoryToFormString(c models.CategoryOverview) string {
 	return fmt.Sprintf(
@@ -281,7 +367,7 @@ func categoryToFormString(c models.CategoryOverview) string {
 		c.Name,
 		c.BudgetInput,
 		c.InputInterval,
-		c.InputPriodId,
+		c.InputPeriodId,
 		c.InputPeriodCaption,
 		c.SpendingLimit,
 		c.PeriodStart.Unix(),
@@ -289,4 +375,61 @@ func categoryToFormString(c models.CategoryOverview) string {
 		c.InitialAmount,
 		c.CurrentAmount,
 	)
+}
+
+func formStringToCategory(c string) (models.CategoryOverview, error) {
+	// Split string to fields
+	fields := strings.Split(c, ",")
+
+	// Create empty category
+	var category models.CategoryOverview
+
+	// Check fields length
+	if len(fields) < 11 {
+		return category, errors.New("wrong format received from frontend")
+	}
+
+	// Get category id
+	id, err := strconv.Atoi(fields[0])
+	if err != nil {
+		return category, err
+	}
+	category.ID = id
+
+	// Get amount
+	initialAmount, err := strconv.ParseFloat(fields[9], 64)
+	if err != nil {
+		return category, err
+	}
+	category.InitialAmount = initialAmount
+
+	// Get budget input
+	budgetInput, err := strconv.ParseFloat(fields[2], 64)
+	if err != nil {
+		return category, err
+	}
+	category.BudgetInput = budgetInput
+
+	// Get spending limit
+	spendingLimit, err := strconv.ParseFloat(fields[6], 64)
+	if err != nil {
+		return category, err
+	}
+	category.SpendingLimit = spendingLimit
+
+	// Get input interval
+	inputInterval, err := strconv.Atoi(fields[3])
+	if err != nil {
+		return category, err
+	}
+	category.InputInterval = inputInterval
+
+	// Get input period
+	inputPriodId, err := strconv.Atoi(fields[4])
+	if err != nil {
+		return category, err
+	}
+	category.InputPeriodId = inputPriodId
+
+	return category, nil
 }

@@ -96,7 +96,7 @@ type CategoryOverview struct {
 
 	BudgetInput        float64
 	InputInterval      int
-	InputPriodId       int
+	InputPeriodId      int
 	InputPeriodCaption string
 
 	SpendingLimit float64

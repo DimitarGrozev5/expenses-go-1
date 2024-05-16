@@ -29,6 +29,7 @@ templ ResetCategoriesCard(d CategoriesData) {
 		<span class="text-xs">Reset Categories</span>
 	</button>
 	@dialogs.Dialog("/categories/reset", resetCategoriesDialogOpened(d.Form), "Reset Categories", "Reset") {
+		@inputs.CsrfInput(d.CSRFToken)
 		<div class="categories-reset-form flex flex-col gap-2 items-stretch" data-periods={ getTimePeriods(d.TimePeriods) }>
 			<div class="flex flex-row items-end gap-2 border border-primary-500 rounded-md p-2">
 				<span class="text-2xl font-bold">Free funds: </span>

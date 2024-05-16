@@ -140,7 +140,7 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 			&category.Name,
 			&category.BudgetInput,
 			&category.InputInterval,
-			&category.InputPriodId,
+			&category.InputPeriodId,
 			&category.InputPeriodCaption,
 			&category.SpendingLimit,
 			&category.SpendingLeft,
@@ -170,6 +170,46 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 	}
 
 	return categories, nil
+}
+
+func (m *sqliteDBRepo) ResetCategories(amount float64, categoryId int, budgetInput float64, inputInterval int, inputPeriod int, spendingLimit float64) error {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Define query to insert account
+	stmt := `INSERT INTO procedure_fund_category_and_reset_period (
+		amount,
+		category,
+		budget_input,
+		input_interval,
+		input_period,
+		spending_limit
+	) VALUES (
+		$1,
+		$2,
+		$3,
+		$4,
+		$5,
+		$6
+	)`
+
+	// Execute query
+	_, err := m.DB.ExecContext(
+		ctx,
+		stmt,
+		amount,
+		categoryId,
+		budgetInput,
+		inputInterval,
+		inputPeriod,
+		spendingLimit,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *sqliteDBRepo) AddCategory(name string, budgetInput float64, spendingLimit float64, inputInterval int, inputPeriod int) error {

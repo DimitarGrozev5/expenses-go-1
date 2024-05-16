@@ -58,6 +58,7 @@ func routes(_ *config.AppConfig) http.Handler {
 		// Handle category related routes
 		r.Get("/categories", handlers.Repo.Categories)
 		r.Post("/categories/add", handlers.Repo.PostNewCategory)
+		r.Post("/categories/reset", handlers.Repo.PostResetCategories)
 		r.Post("/categories/{categoryId}/move-up", handlers.Repo.PostMoveCategory(1))
 		r.Post("/categories/{categoryId}/move-down", handlers.Repo.PostMoveCategory(-1))
 		r.Post("/categories/{categoryId}/delete", handlers.Repo.PostDeleteCategory)
