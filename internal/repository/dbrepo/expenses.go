@@ -17,19 +17,21 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 	defer cancel()
 
 	// Define query
-	query := `	SELECT	expenses.id as expense_id,
-						expenses.amount,
-						expenses.date,
-						tags.id as tag_id,
-						tags.name as tag_name,
-						tags.usage_count,
-						accounts.id as account_id,
-						accounts.name as account_name
-				FROM expenses
-				JOIN expense_tags	ON (expenses.id = expense_tags.expense_id)
-				JOIN tags			ON (expense_tags.tag_id = tags.id)
-				JOIN accounts		ON (expenses.from_account = accounts.id)
-				ORDER BY expenses.date DESC, tags.usage_count DESC;`
+	query := `	SELECT
+					expense_id,
+					amount,
+					date,
+
+					tag_id,
+					tag_name,
+					usage_count,
+
+					account_id,
+					account_name,
+
+					categoriy_id,
+					category_name
+				FROM view_detailed_expenses;`
 
 	// Get rows
 	rows, err := m.DB.QueryContext(ctx, query)
@@ -48,8 +50,20 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 		var expense models.Expense
 		var tag models.Tag
 		var account models.Account
+		var category models.Category
 
-		err = rows.Scan(&expense.ID, &expense.Amount, &expense.Date, &tag.ID, &tag.Name, &tag.UsageCount, &account.ID, &account.Name)
+		err = rows.Scan(
+			&expense.ID,
+			&expense.Amount,
+			&expense.Date,
+			&tag.ID,
+			&tag.Name,
+			&tag.UsageCount,
+			&account.ID,
+			&account.Name,
+			&category.ID,
+			&category.Name,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -61,6 +75,7 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 		if !ok {
 			expense.Tags = []models.Tag{tag}
 			expense.FromAccount = account
+			expense.FromCategory = category
 			expensesMap[expense.ID] = &expense
 			expensesOrder = append(expensesOrder, expense.ID)
 			continue
@@ -69,6 +84,7 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 		// If expense has been added
 		oldExpense.Tags = append(oldExpense.Tags, tag)
 		oldExpense.FromAccount = account
+		oldExpense.FromCategory = category
 	}
 	err = rows.Err()
 	if err != nil {

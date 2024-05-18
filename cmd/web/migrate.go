@@ -125,7 +125,43 @@ func Migrate(dbName string) error {
 	stmt = `CREATE VIEW view_current_expenses AS
 				SELECT id, amount, date, from_account, from_category, created_at, updated_at
 				FROM expenses
-				WHERE from_period = null;`
+				WHERE from_period IS NULL;`
+
+	// Execute query
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return err
+	}
+
+	/*
+	 * View current expenses with tags, accounts and categories
+	 */
+	stmt = `CREATE VIEW view_detailed_expenses AS
+				SELECT
+					e.id 			AS expense_id,
+					e.amount,
+					e.date,
+					e.from_account,
+					e.from_category,
+					e.created_at,
+					e.updated_at,
+
+					tags.id 			AS tag_id,
+					tags.name 			AS tag_name,
+					tags.usage_count,
+
+					accounts.id 		AS account_id,
+					accounts.name 		AS account_name,
+					
+					categories.id 		AS categoriy_id,
+					categories.name 	AS category_name
+				FROM view_current_expenses AS e
+				JOIN expense_tags	ON (e.id = expense_tags.expense_id)
+				JOIN tags			ON (expense_tags.tag_id = tags.id)
+				JOIN accounts		ON (e.from_account = accounts.id)
+				JOIN categories		ON (e.from_account = categories.id)
+				ORDER BY e.date DESC, tags.usage_count DESC;`
 
 	// Execute query
 	_, err = db.Exec(stmt)

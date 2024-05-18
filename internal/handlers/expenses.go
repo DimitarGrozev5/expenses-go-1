@@ -77,13 +77,13 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	td := models.TemplateData{
 		Title: "Expenses",
 		Form: map[string]*forms.Form{
-			// "add-expense": forms.New(nil),
-			"add-expense": forms.NewFromMap(map[string]string{
-				"amount":        "1",
-				"tags":          "asd",
-				"from_account":  "1",
-				"from_category": "1",
-			}),
+			"add-expense": forms.New(nil),
+			// "add-expense": forms.NewFromMap(map[string]string{
+			// 	"amount":        "1",
+			// 	"tags":          "asd",
+			// 	"from_account":  "1",
+			// 	"from_category": "1",
+			// }),
 		},
 	}
 
