@@ -98,16 +98,19 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 	defer tx.Rollback()
 
 	// Update tags
-	exisitingTags, err := m.UpdateTags(tags, nil)
+	exisitingTags, err := m.UpdateTags(tags, tx)
 	if err != nil {
 		return err
 	}
 
 	// Define query to insert expense
-	stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES($1, $2, $3, $4)`
+	// Transactions lock the db so the last expense will be the one inserted
+	// Autoincrement adds one so the larges id will be the last
+	// Can't use RETURNING because expense insert happens through a trigger
+	stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES($1, $2, $3, $4);`
 
-	// Execute query
-	result, err := tx.ExecContext(
+	// Exec statement
+	_, err = tx.ExecContext(
 		ctx,
 		stmt,
 		expense.Amount,
@@ -119,20 +122,27 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 		return err
 	}
 
+	// Take last inserted expense
+	query := `SELECT id FROM expenses ORDER BY id DESC LIMIT 1;`
+
+	// Execute query
+	row := tx.QueryRowContext(ctx, query)
+
 	// Get new expense expenseId
-	expenseId, err := result.LastInsertId()
+	var expenseId int
+
+	err = row.Scan(&expenseId)
+
+	// Check for error
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(expenseId)
-	fmt.Println(exisitingTags)
-
 	// Add tag relations
-	// err = m.AddExpenseTags(int(expenseId), exisitingTags, tx)
-	// if err != nil {
-	// 	return err
-	// }
+	err = m.AddExpenseTags(int(expenseId), exisitingTags, tx)
+	if err != nil {
+		return err
+	}
 
 	tx.Commit()
 

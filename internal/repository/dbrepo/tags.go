@@ -120,7 +120,7 @@ func (m *sqliteDBRepo) UpdateTags(tags []string, etx *sql.Tx) ([]models.Tag, err
 	query := fmt.Sprintf("SELECT id, name, usage_count FROM tags WHERE name IN (%s);", strings.Join(wrapedTags, ", "))
 
 	// Get rows
-	rows, err := m.DB.QueryContext(ctx, query)
+	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
