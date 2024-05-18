@@ -34,7 +34,7 @@ func beforeAll(t *testing.T) {
 		}
 
 		// Create db
-		db, err = sql.Open("sqlite3", fmt.Sprintf("%s.db?_fk=%s", dbName, url.QueryEscape("true")))
+		db, err = sql.Open("sqlite3", fmt.Sprintf("%s.db?_fk=%s&_txlock=%s", dbName, url.QueryEscape("true"), url.QueryEscape("exclusive")))
 		if err != nil {
 			log.Fatal(err)
 		}

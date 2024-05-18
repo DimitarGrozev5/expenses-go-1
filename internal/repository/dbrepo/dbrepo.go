@@ -31,5 +31,5 @@ func GetUserDBPath(dbPath, user string) string {
 	// Get user key
 	userKey := GetUserKey(user)
 
-	return fmt.Sprintf("%s%s.db?_fk=%s", dbPath, userKey, url.QueryEscape("true"))
+	return fmt.Sprintf("%s%s.db?_fk=%s&_txlock=%s", dbPath, userKey, url.QueryEscape("true"), url.QueryEscape("exclusive"))
 }
