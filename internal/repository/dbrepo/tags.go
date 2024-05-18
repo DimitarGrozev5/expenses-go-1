@@ -95,13 +95,13 @@ func (m *sqliteDBRepo) UpdateTags(tags []string, etx *sql.Tx) ([]models.Tag, err
 	}
 
 	// Define query
-	stmt := `INSERT INTO procedure_insert_tag(name) VALUES `
+	stmt := `INSERT INTO procedure_insert_tag (name) VALUES `
 
 	// Append templates
 	stmt = fmt.Sprintf("%s%s", stmt, strings.Join(tagValuesTmpl, ","))
 
 	// Insert tags
-	_, err := tx.QueryContext(
+	_, err := tx.ExecContext(
 		ctx,
 		stmt,
 		tagValues...,
@@ -110,11 +110,17 @@ func (m *sqliteDBRepo) UpdateTags(tags []string, etx *sql.Tx) ([]models.Tag, err
 		return nil, err
 	}
 
-	// Get tags
-	query := `SELECT FROM tags (id, name, usage_count) WHERE name IN ($1)`
+	// Wrap tags in quotes
+	wrapedTags := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		wrapedTags = append(wrapedTags, fmt.Sprintf("'%s'", tag))
+	}
+
+	// Set query
+	query := fmt.Sprintf("SELECT id, name, usage_count FROM tags WHERE name IN (%s);", strings.Join(wrapedTags, ", "))
 
 	// Get rows
-	rows, err := m.DB.QueryContext(ctx, query, strings.Join(tags, ","))
+	rows, err := m.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +144,10 @@ func (m *sqliteDBRepo) UpdateTags(tags []string, etx *sql.Tx) ([]models.Tag, err
 	err = rows.Err()
 	if err != nil {
 		return nil, err
+	}
+
+	if etx == nil {
+		tx.Commit()
 	}
 
 	// Return all tags

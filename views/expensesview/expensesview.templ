@@ -9,9 +9,10 @@ import "fmt"
 // Page data
 type ExpensesData struct {
 	models.TemplateData
-	Expenses []models.Expense
-	Tags     []models.Tag
-	Accounts []models.Account
+	Expenses   []models.Expense
+	Tags       []models.Tag
+	Accounts   []models.Account
+	Categories []models.Category
 }
 
 templ (d ExpensesData) View() {
@@ -49,9 +50,16 @@ templ (d ExpensesData) View() {
 					Value:    d.Form["add-expense"].Get("from_account"),
 					Error:    d.Form["add-expense"].Errors.Get("from_account"),
 				})
+				@inputs.CategorySelect(d.Categories, inputs.CategorySelectProps{
+					Label:    "From Category",
+					Name:     "from_category",
+					Required: true,
+					Value:    d.Form["add-expense"].Get("from_category"),
+					Error:    d.Form["add-expense"].Errors.Get("from_category"),
+				})
 			}
 			for _, expense := range d.Expenses {
-				@ExpenseCard(expense, d.Tags, d.Accounts, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken)
+				@ExpenseCard(expense, d.Tags, d.Accounts, d.Categories, d.Form[fmt.Sprintf("edit-%d", expense.ID)], d.CSRFToken)
 			}
 		}
 	}

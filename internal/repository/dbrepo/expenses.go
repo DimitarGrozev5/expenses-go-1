@@ -3,7 +3,6 @@ package dbrepo
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -99,13 +98,13 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 	defer tx.Rollback()
 
 	// Update tags
-	exisitingTags, err := m.UpdateTags(tags, tx)
+	exisitingTags, err := m.UpdateTags(tags, nil)
 	if err != nil {
 		return err
 	}
 
 	// Define query to insert expense
-	stmt := `INSERT INTO procedure_new_expense(amount, date, from_account, from_category) VALUES($1, $2, $3, $4)`
+	stmt := `INSERT INTO procedure_new_expense (amount, date, from_account, from_category) VALUES($1, $2, $3, $4)`
 
 	// Execute query
 	result, err := tx.ExecContext(
@@ -126,11 +125,14 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 		return err
 	}
 
+	fmt.Println(expenseId)
+	fmt.Println(exisitingTags)
+
 	// Add tag relations
-	err = m.AddExpenseTags(int(expenseId), exisitingTags, tx)
-	if err != nil {
-		return err
-	}
+	// err = m.AddExpenseTags(int(expenseId), exisitingTags, tx)
+	// if err != nil {
+	// 	return err
+	// }
 
 	tx.Commit()
 
@@ -151,7 +153,7 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense, tags []string) error 
 	defer tx.Rollback()
 
 	// Create query to remove all expense tags
-	stmt := `DELETE FROM procedure_unlink_tags_from_expense WHERE expense_id = $1`
+	stmt := `DELETE FROM procedure_unlink_tags_from_expense WHERE expense_id = $1;`
 
 	// Delete relations
 	_, err = tx.ExecContext(
@@ -253,11 +255,6 @@ func (m *sqliteDBRepo) AddExpenseTags(expenseId int, tags []models.Tag, etx *sql
 	// Loop trough new tags
 	for i, tag := range tags {
 
-		// If tag is new
-		if tag.ID == -1 {
-			return errors.New("new tag found in tags list, can't add new tag to expense")
-		}
-
 		// Define template
 		tmpl := fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
 
@@ -282,6 +279,10 @@ func (m *sqliteDBRepo) AddExpenseTags(expenseId int, tags []models.Tag, etx *sql
 	)
 	if err != nil {
 		return err
+	}
+
+	if etx == nil {
+		tx.Commit()
 	}
 
 	return nil
