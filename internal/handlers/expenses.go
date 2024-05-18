@@ -101,10 +101,11 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 
 		// Add forms
 		td.Form[edit] = forms.NewFromMap(map[string]string{
-			"amount":       fmt.Sprintf("%0.2f", expense.Amount),
-			"tags":         strings.Join(tags, ","),
-			"date":         fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
-			"from_account": fmt.Sprintf("%d", expense.FromAccount.ID),
+			"amount":        fmt.Sprintf("%0.2f", expense.Amount),
+			"tags":          strings.Join(tags, ","),
+			"date":          fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
+			"from_account":  fmt.Sprintf("%d", expense.FromAccount.ID),
+			"from_category": fmt.Sprintf("%d", expense.FromCategory.ID),
 		})
 		td.Form[delete] = forms.New(nil)
 	}
