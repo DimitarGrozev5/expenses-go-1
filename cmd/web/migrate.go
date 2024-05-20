@@ -47,7 +47,7 @@ func Migrate(dbName string) error {
 				);
 				
 				CREATE VIEW procedure_add_free_funds AS
-					SELECT free_funds as amount, null as to_account FROM user;
+					SELECT free_funds as amount, null as to_account, null as tag_id FROM user;
 					
 				CREATE TRIGGER triggers__procedure_add_free_funds__update
 					INSTEAD OF INSERT
@@ -64,9 +64,11 @@ func Migrate(dbName string) error {
 
 					INSERT INTO accounts_input_log (
 						account,
+						tag_id,
 						amount
 					) VALUES (
 						new.to_account,
+						new.tag_id,
 						new.amount
 					);
 				END;`
@@ -517,7 +519,7 @@ func Migrate(dbName string) error {
 	stmt = `CREATE TABLE accounts (
 		id				INTEGER		NOT NULL	PRIMARY KEY		AUTOINCREMENT,
 		
-		name			TEXT		NOT NULL	UNIQUE		CHECK (length(name) > 3),
+		name			TEXT		NOT NULL	UNIQUE		CHECK (length(name) > 2),
 		current_amount	NUMERIC		NOT NULL	DEFAULT 0	CHECK (current_amount >= 0),
 
 		usage_count		INTEGER		NOT NULL	DEFAULT 0,
@@ -545,6 +547,9 @@ func Migrate(dbName string) error {
 				account			INTEGER		NOT NULL	REFERENCES accounts (id)
 															ON UPDATE CASCADE
 															ON DELETE CASCADE,
+				tag_id				INTEGER		NOT NULL	REFERENCES tags (id)
+															ON UPDATE CASCADE
+															ON DELETE RESTRICT,
 				amount			NUMERIC		NOT NULL,
 
 				created_at		DATETIME	NOT NULL	DEFAULT CURRENT_TIMESTAMP,

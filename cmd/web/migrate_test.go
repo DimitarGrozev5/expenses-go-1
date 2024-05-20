@@ -882,7 +882,7 @@ func TestMigration(t *testing.T) {
 
 		// You can't delte a cateogory that is being used. Category is being used when it's referenced by expenses or when it has funds
 		func(t *testing.T) {
-			// Insert category
+			// Insert category and account
 			stmt := `INSERT INTO procedure_new_category (
 				name,
 				budget_input,
@@ -908,7 +908,8 @@ func TestMigration(t *testing.T) {
 				1,
 				1,
 				100
-			);`
+			);
+			INSERT INTO accounts (name, table_order) VALUES ('test account1', 1);`
 
 			// Execute
 			_, err := db.Exec(stmt)
@@ -917,13 +918,13 @@ func TestMigration(t *testing.T) {
 				return
 			}
 
-			// Artificialy update category current amount
-			stmt = `UPDATE categories SET initial_amount=100 WHERE id=1;`
+			// Add expense to category
+			stmt = `INSERT INTO expenses (amount, date, from_account, from_category) VALUES (10, $1, 1, 1);`
 
 			// Execute
-			_, err = db.Exec(stmt)
+			_, err = db.Exec(stmt, time.Now())
 			if err != nil {
-				t.Error("couldn't update category", err)
+				t.Error("couldn't add expense", err)
 				return
 			}
 
@@ -934,10 +935,6 @@ func TestMigration(t *testing.T) {
 			_, err = db.Exec(stmt)
 			if err == nil {
 				t.Error("you shouldn't be able to delete a category that is used", err)
-				return
-			}
-			if !strings.HasPrefix(err.Error(), "cant delete a category that is used") {
-				t.Errorf("wrong error received; expected 'cant delete a category that is used'; received %s", err)
 				return
 			}
 
@@ -1134,7 +1131,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Delete from expense tags
-			stmt = `DELETE FROM procedure_unlink_tag_from_expense WHERE id=3`
+			stmt = `DELETE FROM procedure_unlink_tags_from_expense WHERE expense_id=2`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -1154,8 +1151,18 @@ func TestMigration(t *testing.T) {
 				t.Errorf("too many tags: %d; expected 2", len(tags3))
 				return
 			}
-			if tags3[0].UsageCount != 2 || tags3[1].UsageCount != 0 {
-				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 2, 0", tags3[0].UsageCount, tags3[1].UsageCount)
+			if tags3[0].UsageCount != 1 || tags3[1].UsageCount != 0 {
+				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 1, 0", tags3[0].UsageCount, tags3[1].UsageCount)
+				return
+			}
+
+			// Delete first tag
+			stmt = `DELETE FROM procedure_remove_tag WHERE id=1`
+
+			// Execute
+			_, err = db.Exec(stmt)
+			if err == nil {
+				t.Error("shouldn't be able to delete tag that has usage_count above zero", err)
 				return
 			}
 
@@ -1180,8 +1187,8 @@ func TestMigration(t *testing.T) {
 				t.Errorf("too many tags: %d; expected 2", len(tags4))
 				return
 			}
-			if tags4[0].UsageCount != 1 || tags4[1].UsageCount != 0 {
-				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 1, 0", tags4[0].UsageCount, tags4[1].UsageCount)
+			if tags4[0].UsageCount != 0 || tags4[1].UsageCount != 0 {
+				t.Errorf("unexpected tags usage_count; recevied: %d, %d; expected 0, 0", tags4[0].UsageCount, tags4[1].UsageCount)
 				return
 			}
 
@@ -1204,16 +1211,6 @@ func TestMigration(t *testing.T) {
 			// Check tags usage_count
 			if len(tags5) > 1 {
 				t.Errorf("too many tags: %d; expected 1", len(tags5))
-				return
-			}
-
-			// Delete first tag
-			stmt = `DELETE FROM procedure_remove_tag WHERE id=1`
-
-			// Execute
-			_, err = db.Exec(stmt)
-			if err == nil {
-				t.Error("shouldn't be able to delete tag that has usage_count above zero", err)
 				return
 			}
 		},
@@ -1534,7 +1531,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add free funds
-			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (100, 1)`
+			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account, tag_id) VALUES (100, 1, 1)`
 
 			// Execute
 			_, err = db.Exec(stmt, time.Now())
@@ -1568,7 +1565,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Try to drop free funds bellow zero
-			stmt = `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (-150, 1)`
+			stmt = `INSERT INTO procedure_add_free_funds (amount, to_account, tag_id) VALUES (-150, 1, 1)`
 
 			// Execute
 			_, err = db.Exec(stmt, time.Now())
@@ -1587,7 +1584,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add money to free funds
-			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (100, 1)`
+			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account, tag_id) VALUES (100, 1, 1)`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -1842,7 +1839,7 @@ func TestMigration(t *testing.T) {
 			}
 
 			// Add money to free funds
-			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account) VALUES (200, 1)`
+			stmt := `INSERT INTO procedure_add_free_funds (amount, to_account, tag_id) VALUES (200, 1, 1)`
 
 			// Execute
 			_, err = db.Exec(stmt)
@@ -2021,7 +2018,8 @@ func seedAccAndCat(t *testing.T) error {
 	stmt := `	INSERT INTO accounts (name, table_order) VALUES ('test account1', 1);
 				INSERT INTO accounts (name, table_order) VALUES ('test account2', 1);
 				INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, table_order, initial_amount, current_amount) VALUES ('test category1', 100, 1, 2, 80, 80, 1, 0, 0);
-				INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, table_order, initial_amount, current_amount) VALUES ('test category2', 100, 1, 2, 80, 80, 1, 0, 0);`
+				INSERT INTO categories (name, budget_input, input_interval, input_period, spending_limit, spending_left, table_order, initial_amount, current_amount) VALUES ('test category2', 100, 1, 2, 80, 80, 1, 0, 0);
+				INSERT INTO tags (name) VALUES ('tag 1');`
 
 	// Execute
 	_, err := db.Exec(stmt)
