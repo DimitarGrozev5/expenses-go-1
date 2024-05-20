@@ -29,6 +29,9 @@ window.addEventListener("load", () => {
      * Get page elements
      */
 
+    // Get single-tag flag
+    const singleTag = container.dataset?.singleTag === "true";
+
     /**
      * Get text input and hide it
      * @type {HTMLInputElement | null}
@@ -255,6 +258,15 @@ window.addEventListener("load", () => {
     // Handle updating the hidden field
     vSelectedTags.addEventListener((value) => {
       hiddenInput.value = [...value].join(",");
+    });
+
+    // If single tag, lock the input
+    vSelectedTags.addEventListener((value) => {
+      if ([...value].length > 0 && singleTag) {
+        addTagInput.disabled = true;
+      } else {
+        addTagInput.disabled = false;
+      }
     });
 
     // Set focus on tag input

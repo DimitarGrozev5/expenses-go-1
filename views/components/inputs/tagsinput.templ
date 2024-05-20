@@ -2,6 +2,7 @@ package inputs
 
 import "github.com/dimitargrozev5/expenses-go-1/internal/models"
 import "strings"
+import "strconv"
 
 type TagsInputProps struct {
 	Name     string
@@ -22,7 +23,7 @@ func joinTags(tags []models.Tag) string {
 }
 
 templ TagsInput(tags []models.Tag, props TagsInputProps) {
-	<div class="tag-input flex flex-col items-stretch border border-primary-500 rounded-md p-2" data-tags={ joinTags(tags) }>
+	<div class="tag-input flex flex-col items-stretch border border-primary-500 rounded-md p-2" data-tags={ joinTags(tags) } data-single-tag={ strconv.FormatBool(props.SingleTag) }>
 		<label for={ props.Name }>{ props.Label }</label>
 		<input
 			name={ props.Name }
