@@ -10,6 +10,7 @@ type AccountsData struct {
 	models.TemplateData
 	Accounts  []models.Account
 	FreeFunds float64
+	Tags      []models.Tag
 }
 
 templ (d AccountsData) View() {
@@ -43,6 +44,14 @@ templ (d AccountsData) View() {
 						Required: true,
 						Value:    d.Form["modify-free-funds"].Get("to-account"),
 						Error:    d.Form["modify-free-funds"].Errors.Get("to-account"),
+					})
+					@inputs.TagsInput(d.Tags, inputs.TagsInputProps{
+						Label:     "Tag",
+						Name:      "tag",
+						Required:  true,
+						Value:     d.Form["modify-free-funds"].Get("tag"),
+						Error:     d.Form["modify-free-funds"].Errors.Get("tag"),
+						SingleTag: true,
 					})
 				}
 			</div>

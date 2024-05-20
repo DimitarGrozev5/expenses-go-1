@@ -9,6 +9,8 @@ type TagsInputProps struct {
 	Required bool
 	Value    string
 	Error    string
+
+	SingleTag bool
 }
 
 func joinTags(tags []models.Tag) string {

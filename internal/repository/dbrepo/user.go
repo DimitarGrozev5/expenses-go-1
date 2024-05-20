@@ -75,30 +75,47 @@ func (m *sqliteDBRepo) Authenticate(testPassword string) (int, string, int, erro
 }
 
 // Modify free funds
-func (m *sqliteDBRepo) ModifyFreeFunds(amount float64, toAccountId int) error {
+func (m *sqliteDBRepo) ModifyFreeFunds(amount float64, toAccountId int, tagName string) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Update tags
+	tags, err := m.UpdateTags([]string{tagName}, tx)
+	if err != nil || len(tags) != 1 {
+		return err
+	}
+
 	// Define query to insert account
 	stmt := `INSERT INTO procedure_add_free_funds (
 		amount,
-		to_account
+		to_account,
+		tag_id
 	) VALUES (
 		$1,
-		$2
+		$2,
+		$3
 	)`
 
 	// Execute query
-	_, err := m.DB.ExecContext(
+	_, err = tx.ExecContext(
 		ctx,
 		stmt,
 		amount,
 		toAccountId,
+		tags[0].ID,
 	)
 	if err != nil {
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }

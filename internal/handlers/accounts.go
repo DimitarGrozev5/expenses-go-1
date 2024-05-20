@@ -29,6 +29,14 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
 	}
 
+	// Get tags
+	tags, err := repo.GetTags()
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting accounts")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
+
 	// Get user
 	user, err := repo.GetUser()
 	if err != nil {
@@ -71,6 +79,7 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 		TemplateData: td,
 		Accounts:     accounts,
 		FreeFunds:    user.FreeFunds,
+		Tags:         tags,
 	}
 
 	// Render view
@@ -146,7 +155,7 @@ func (m *Repository) PostModifyFreeFunds(w http.ResponseWriter, r *http.Request)
 
 	// Get form and validate fields
 	form := forms.New(r.PostForm)
-	form.Required("amount", "to-account")
+	form.Required("amount", "to-account", "tag")
 	form.IsFloat64("amount")
 	form.IsInt("to-account")
 
@@ -166,9 +175,10 @@ func (m *Repository) PostModifyFreeFunds(w http.ResponseWriter, r *http.Request)
 	// Get data
 	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
 	toAccount, _ := strconv.ParseInt(form.Get("to-account"), 10, 64)
+	tag := form.Get("tag")
 
 	// Add expense to database
-	err = repo.ModifyFreeFunds(amount, int(toAccount))
+	err = repo.ModifyFreeFunds(amount, int(toAccount), tag)
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Failed to modify free funds")
