@@ -1110,12 +1110,17 @@ form {
   line-height: 1rem;
 }
 
+.font-bold {
+  font-weight: 700;
+}
+
 .font-semibold {
   font-weight: 600;
 }
 
-.font-bold {
-  font-weight: 700;
+.text-green-500 {
+  --tw-text-opacity: 1;
+  color: rgb(34 197 94 / var(--tw-text-opacity));
 }
 
 .text-green-700 {
@@ -1166,11 +1171,6 @@ form {
 .text-yellow-700 {
   --tw-text-opacity: 1;
   color: rgb(161 98 7 / var(--tw-text-opacity));
-}
-
-.text-green-500 {
-  --tw-text-opacity: 1;
-  color: rgb(34 197 94 / var(--tw-text-opacity));
 }
 
 .shadow-lg {
