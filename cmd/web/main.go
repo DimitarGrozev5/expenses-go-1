@@ -19,7 +19,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const portNumber = ":8080"
+const portNumber = ":3001"
 
 // Init app config
 var app config.AppConfig
