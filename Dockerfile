@@ -14,6 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app with CGO enabled
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o web ./cmd/web
+# RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o web ./cmd/web
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC="gcc" go build -ldflags '-extldflags "-static"' -o web ./cmd/web
 
 # The 'main' binary will be created inside /app directory in the container
