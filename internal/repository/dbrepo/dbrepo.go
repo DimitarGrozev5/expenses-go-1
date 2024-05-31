@@ -27,9 +27,13 @@ func GetUserKey(user string) string {
 }
 
 // Get user db path
-func GetUserDBPath(dbPath, user string) string {
+func GetUserDBPath(dbPath, user string, fileOnly bool) string {
 	// Get user key
 	userKey := GetUserKey(user)
+
+	if fileOnly {
+		return fmt.Sprintf("%s%s.db", dbPath, userKey)
+	}
 
 	return fmt.Sprintf("%s%s.db?_fk=%s&_txlock=%s", dbPath, userKey, url.QueryEscape("true"), url.QueryEscape("exclusive"))
 }

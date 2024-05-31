@@ -43,7 +43,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	uPassword := form.Get("password")
 
 	// Check if user DB exists
-	_, err = os.Stat(dbrepo.GetUserDBPath(m.App.DBPath, uEmail))
+	_, err = os.Stat(dbrepo.GetUserDBPath(m.App.DBPath, uEmail, true))
 	if errors.Is(err, os.ErrNotExist) {
 
 		// Write to error log
@@ -67,7 +67,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create user connection
-	dbconn, err := driver.ConnectSQL(dbrepo.GetUserDBPath(m.App.DBPath, uEmail))
+	dbconn, err := driver.ConnectSQL(dbrepo.GetUserDBPath(m.App.DBPath, uEmail, false))
 	if err != nil {
 
 		// Write to error log
