@@ -2,6 +2,7 @@ package dbrepo
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -182,17 +183,23 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 	return categories, nil
 }
 
-func (m *sqliteDBRepo) ResetCategories(amount float64, categoryId int, budgetInput float64, inputInterval int, inputPeriod int, spendingLimit float64) error {
+func (m *sqliteDBRepo) ResetCategory(amount float64, categoryId int, budgetInput float64, inputInterval int, inputPeriod int, spendingLimit float64, etx *sql.Tx) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// Start transaction
-	tx, err := m.DB.Begin()
-	if err != nil {
-		return err
+	var tx *sql.Tx
+	if etx != nil {
+		tx = etx
+	} else {
+		var err error
+		tx, err = m.DB.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
 	}
-	defer tx.Rollback()
 
 	// Define query to insert account
 	stmt := `INSERT INTO procedure_fund_category_and_reset_period (
@@ -212,7 +219,7 @@ func (m *sqliteDBRepo) ResetCategories(amount float64, categoryId int, budgetInp
 	)`
 
 	// Execute query
-	_, err = tx.ExecContext(
+	_, err := tx.ExecContext(
 		ctx,
 		stmt,
 		amount,
@@ -224,6 +231,26 @@ func (m *sqliteDBRepo) ResetCategories(amount float64, categoryId int, budgetInp
 	)
 	if err != nil {
 		return err
+	}
+
+	if etx == nil {
+		tx.Commit()
+	}
+
+	return nil
+}
+
+func (m *sqliteDBRepo) ResetCategories(cateogries []models.ResetCategoryData) error {
+
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, categoryData := range cateogries {
+		m.ResetCategory(categoryData.Amount, categoryData.CategoryId, categoryData.BudgetInput, categoryData.InputInterval, categoryData.InputPeriod, categoryData.SpendingLimit, tx)
 	}
 
 	tx.Commit()

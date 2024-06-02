@@ -319,6 +319,9 @@ func (m *Repository) PostResetCategories(w http.ResponseWriter, r *http.Request)
 	// Get categories for reset
 	cats := strings.Split(usedCategoriesString, ";")
 
+	// Store reset category data
+	resetData := []models.ResetCategoryData{}
+
 	// Loop through categories
 	for _, cat := range cats {
 		// Get relevant data
@@ -338,21 +341,25 @@ func (m *Repository) PostResetCategories(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		amount := category.InitialAmount
-		categoryId := category.ID
-		budgetInput := category.BudgetInput
-		inputInterval := category.InputInterval
-		inputPeriod := category.InputPeriodId
-		spendingLimit := category.SpendingLimit
+		var data models.ResetCategoryData
 
-		// Add category to database
-		err = repo.ResetCategories(amount, categoryId, budgetInput, inputInterval, inputPeriod, spendingLimit)
-		if err != nil {
-			m.App.ErrorLog.Println(err)
-			m.AddErrorMsg(r, "Failed to add category")
-			http.Redirect(w, r, "/categories", http.StatusSeeOther)
-			return
-		}
+		data.Amount = category.InitialAmount
+		data.CategoryId = category.ID
+		data.BudgetInput = category.BudgetInput
+		data.InputInterval = category.InputInterval
+		data.InputPeriod = category.InputPeriodId
+		data.SpendingLimit = category.SpendingLimit
+
+		resetData = append(resetData, data)
+	}
+
+	// Reset all categories
+	err = repo.ResetCategories(resetData)
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Failed to reset category")
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
+		return
 	}
 
 	// Add success message

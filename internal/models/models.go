@@ -112,6 +112,15 @@ type CategoryOverview struct {
 	TableOrder   int
 }
 
+type ResetCategoryData struct {
+	Amount        float64
+	CategoryId    int
+	BudgetInput   float64
+	InputInterval int
+	InputPeriod   int
+	SpendingLimit float64
+}
+
 // Time periods
 type TimePeriod struct {
 	ID        int
