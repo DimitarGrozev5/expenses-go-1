@@ -236,11 +236,18 @@ func (m *sqliteDBRepo) DeleteExpense(id int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	// Define query
 	stmt := `DELETE FROM procedure_remove_expense WHERE id=$1`
 
 	// Execute query
-	_, err := m.DB.ExecContext(
+	_, err = tx.ExecContext(
 		ctx,
 		stmt,
 		id,
@@ -250,6 +257,7 @@ func (m *sqliteDBRepo) DeleteExpense(id int) error {
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }
 

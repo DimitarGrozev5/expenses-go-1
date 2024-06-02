@@ -100,11 +100,18 @@ func (m *sqliteDBRepo) AddAccount(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	// Define query to insert account
 	stmt := `INSERT INTO procedure_insert_account (name) VALUES ($1)`
 
 	// Execute query
-	_, err := m.DB.ExecContext(
+	_, err = tx.ExecContext(
 		ctx,
 		stmt,
 		name,
@@ -113,6 +120,7 @@ func (m *sqliteDBRepo) AddAccount(name string) error {
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }
 
@@ -121,11 +129,18 @@ func (m *sqliteDBRepo) EditAccountName(id int, name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	// Define query to insert account
 	stmt := `UPDATE procedure_account_update_name SET name = $1 WHERE id = $2`
 
 	// Execute query
-	_, err := m.DB.ExecContext(
+	_, err = tx.ExecContext(
 		ctx,
 		stmt,
 		name,
@@ -135,6 +150,7 @@ func (m *sqliteDBRepo) EditAccountName(id int, name string) error {
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }
 
@@ -171,7 +187,6 @@ func (m *sqliteDBRepo) DeleteAccount(id int) error {
 	}
 
 	tx.Commit()
-
 	return nil
 }
 

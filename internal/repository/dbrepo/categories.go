@@ -187,6 +187,13 @@ func (m *sqliteDBRepo) ResetCategories(amount float64, categoryId int, budgetInp
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	// Define query to insert account
 	stmt := `INSERT INTO procedure_fund_category_and_reset_period (
 		amount,
@@ -205,7 +212,7 @@ func (m *sqliteDBRepo) ResetCategories(amount float64, categoryId int, budgetInp
 	)`
 
 	// Execute query
-	_, err := m.DB.ExecContext(
+	_, err = tx.ExecContext(
 		ctx,
 		stmt,
 		amount,
@@ -219,6 +226,7 @@ func (m *sqliteDBRepo) ResetCategories(amount float64, categoryId int, budgetInp
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }
 
@@ -226,6 +234,13 @@ func (m *sqliteDBRepo) AddCategory(name string, budgetInput float64, spendingLim
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
 	// Define query to insert account
 	stmt := `INSERT INTO procedure_new_category (
@@ -243,7 +258,7 @@ func (m *sqliteDBRepo) AddCategory(name string, budgetInput float64, spendingLim
 	)`
 
 	// Execute query
-	_, err := m.DB.ExecContext(
+	_, err = tx.ExecContext(
 		ctx,
 		stmt,
 		name,
@@ -256,6 +271,7 @@ func (m *sqliteDBRepo) AddCategory(name string, budgetInput float64, spendingLim
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }
 
@@ -281,7 +297,6 @@ func (m *sqliteDBRepo) DeleteCategory(id int) error {
 	}
 
 	tx.Commit()
-
 	return nil
 }
 
@@ -312,6 +327,5 @@ func (m *sqliteDBRepo) ReorderCategory(categoryid int, new_order int) error {
 	}
 
 	tx.Commit()
-
 	return nil
 }
