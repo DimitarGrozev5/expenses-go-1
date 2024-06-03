@@ -67,6 +67,10 @@ By **Category** the app means a budget category. The budget **category** helps t
 
 The project is a golang server that keeps the sqlite databases localy and doesn't communicate with external services.
 
+### Stage 2
+
+For Stage 2 I will split the project in to two parts. The main server, that renders content for the users and a database server, that contains all of the logic for connecting and communicating with the db. This seems like an unnecessary transition but it's a neccessary step if I want to make a horizontally scalable sqlite database. It also decouples the user facing part from the buisness logic and I may end up converting that to NextJS. My initial plan is to use GRPC for communicating between the different parts of the system, but we shall see.
+
 ## Project elements
 
 ### Stage 1
