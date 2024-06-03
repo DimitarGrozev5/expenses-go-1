@@ -15,7 +15,6 @@ import (
 	"github.com/dimitargrozev5/expenses-go-1/internal/handlers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
-	"github.com/dimitargrozev5/expenses-go-1/internal/render"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -84,17 +83,7 @@ func run() error {
 	// Set db path
 	app.DBPath = "./db/"
 
-	// Create template cache
-	tc, err := render.CreateTemplateCache()
-	if err != nil {
-		log.Fatal("Cannot create template cache")
-		return err
-	}
-	app.TemplateCache = tc
-	app.UseCache = false
-
 	// Pass app config
-	render.NewTemplates(&app)
 	helpers.NewHelpers(&app)
 
 	// Create handlers repo
