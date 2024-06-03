@@ -11,9 +11,9 @@ import (
 func Migrate(dbName string) error {
 
 	// Delete old DB
-	os.Remove(dbName)
+	os.Remove(dbName + ".db")
 
-	_, err := os.OpenFile(dbName, os.O_RDONLY, os.ModeType)
+	_, err := os.OpenFile(dbName+".db", os.O_RDONLY, os.ModeType)
 	if err == nil {
 		log.Printf("DB not deleted!!!!!!!!!!!")
 		return err
@@ -156,13 +156,13 @@ func Migrate(dbName string) error {
 					accounts.id 		AS account_id,
 					accounts.name 		AS account_name,
 					
-					categories.id 		AS categoriy_id,
+					categories.id 		AS category_id,
 					categories.name 	AS category_name
 				FROM view_current_expenses AS e
 				JOIN expense_tags	ON (e.id = expense_tags.expense_id)
 				JOIN tags			ON (expense_tags.tag_id = tags.id)
 				JOIN accounts		ON (e.from_account = accounts.id)
-				JOIN categories		ON (e.from_account = categories.id)
+				JOIN categories		ON (e.from_category = categories.id)
 				ORDER BY e.date DESC, tags.usage_count DESC;`
 
 	// Execute query
@@ -735,7 +735,7 @@ func Migrate(dbName string) error {
 															ON DELETE RESTRICT,
 
 		spending_limit			NUMERIC		NOT NULL		CHECK (spending_limit >= 0),
-		spending_left			NUMERIC		NOT NULL		CHECK (spending_left >= 0),
+		spending_left			NUMERIC		NOT NULL,
 
 		initial_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (initial_amount >= 0),
 		current_amount			NUMERIC		NOT NULL	DEFAULT 0		CHECK (current_amount >= 0),

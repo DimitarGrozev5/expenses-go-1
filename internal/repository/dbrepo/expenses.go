@@ -29,7 +29,7 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 					account_id,
 					account_name,
 
-					categoriy_id,
+					category_id,
 					category_name
 				FROM view_detailed_expenses;`
 

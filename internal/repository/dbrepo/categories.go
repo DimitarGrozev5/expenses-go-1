@@ -240,7 +240,7 @@ func (m *sqliteDBRepo) ResetCategory(amount float64, categoryId int, budgetInput
 	return nil
 }
 
-func (m *sqliteDBRepo) ResetCategories(cateogries []models.ResetCategoryData) error {
+func (m *sqliteDBRepo) ResetCategories(categories []models.ResetCategoryData) error {
 
 	// Start transaction
 	tx, err := m.DB.Begin()
@@ -249,8 +249,11 @@ func (m *sqliteDBRepo) ResetCategories(cateogries []models.ResetCategoryData) er
 	}
 	defer tx.Rollback()
 
-	for _, categoryData := range cateogries {
-		m.ResetCategory(categoryData.Amount, categoryData.CategoryId, categoryData.BudgetInput, categoryData.InputInterval, categoryData.InputPeriod, categoryData.SpendingLimit, tx)
+	for _, categoryData := range categories {
+		err = m.ResetCategory(categoryData.Amount, categoryData.CategoryId, categoryData.BudgetInput, categoryData.InputInterval, categoryData.InputPeriod, categoryData.SpendingLimit, tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	tx.Commit()
