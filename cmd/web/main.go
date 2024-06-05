@@ -16,9 +16,15 @@ import (
 	"github.com/dimitargrozev5/expenses-go-1/internal/helpers"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	_ "github.com/mattn/go-sqlite3"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-const portNumber = ":3001"
+var (
+	seed   = flag.Bool("seed", false, "Create and seed new DB asd@asd.asd with password asd")
+	port   = flag.String("port", "3001", "Set server port")
+	dbAddr = flag.String("dbaddr", "127.0.0.1:3002", "Database Controller address")
+)
 
 // Init app config
 var app config.AppConfig
@@ -27,16 +33,28 @@ var infoLog *log.Logger
 var errorLog *log.Logger
 
 func main() {
-	err := run()
+
+	// Start gRPC client
+	var opts = []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+
+	conn, err := grpc.NewClient(*dbAddr, opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	err = run(conn)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer handlers.Repo.CloseAllConnections()
 
-	fmt.Println("Starting server on port ", portNumber)
+	fmt.Println("Starting server on port ", *port)
 
 	srv := &http.Server{
-		Addr:    portNumber,
+		Addr:    fmt.Sprintf(":%s", *port),
 		Handler: routes(&app),
 	}
 
@@ -46,7 +64,7 @@ func main() {
 	}
 }
 
-func run() error {
+func run(conn *grpc.ClientConn) error {
 	// res, _ := bcrypt.GenerateFromPassword([]byte("asd"), bcrypt.DefaultCost)
 	// fmt.Println(string(res))
 
@@ -57,7 +75,6 @@ func run() error {
 	gob.Register(map[string]*forms.Form{})
 
 	// Read command line arguments
-	seed := flag.Bool("seed", false, "Create and seed new DB asd@asd.asd with password asd")
 	flag.Parse()
 
 	// Set in production
@@ -86,8 +103,11 @@ func run() error {
 	// Pass app config
 	helpers.NewHelpers(&app)
 
+	// Create gRPC client
+	client := models.NewDatabaseClient(conn)
+
 	// Create handlers repo
-	repo := handlers.NewRepo(&app)
+	repo := handlers.NewRepo(&app, &client)
 	handlers.NewHandlers(repo)
 
 	// Seed DB
