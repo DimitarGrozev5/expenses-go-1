@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/ecdsa"
 	"log"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
@@ -10,7 +11,7 @@ import (
 type DBControllerConfig struct {
 	InProduction  bool
 	DBPath        string
-	JWTKey        string
+	JWTKey        *ecdsa.PrivateKey
 	InfoLog       *log.Logger
 	ErrorLog      *log.Logger
 	DBConnections map[string]repository.DatabaseRepo
