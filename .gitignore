@@ -2,3 +2,4 @@ views/**/*.txt
 views/**/*.go
 db
 work.md
+keys
