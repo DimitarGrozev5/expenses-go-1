@@ -10,6 +10,7 @@ import (
 type DBControllerConfig struct {
 	InProduction  bool
 	DBPath        string
+	JWTKey        string
 	InfoLog       *log.Logger
 	ErrorLog      *log.Logger
 	DBConnections map[string]repository.DatabaseRepo

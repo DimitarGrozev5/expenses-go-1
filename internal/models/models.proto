@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+// import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/dimitargrozev5/expenses-go-1/internal/models";
 
 // Simple text message
@@ -7,8 +9,19 @@ message SimpleMessage {
     string msg = 1;
 }
 
+// Login credentials
+message LoginCredentials {
+    string email = 1;
+    string password = 2;
+}
+message LoginToken {
+    string token = 1;
+}
+
 service Database {
     // Simple ping method
     rpc Ping(SimpleMessage) returns (SimpleMessage);
 
+    // Authenticate
+    rpc Authenticate(LoginCredentials) returns (LoginToken);
 }

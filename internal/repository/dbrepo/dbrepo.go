@@ -10,11 +10,11 @@ import (
 )
 
 type sqliteDBRepo struct {
-	App *config.AppConfig
+	App *config.DBControllerConfig
 	DB  *sql.DB
 }
 
-func NewSqliteRepo(app *config.AppConfig, user string, conn *sql.DB) repository.DatabaseRepo {
+func NewSqliteRepo(app *config.DBControllerConfig, user string, conn *sql.DB) repository.DatabaseRepo {
 	return &sqliteDBRepo{
 		App: app,
 		DB:  conn,

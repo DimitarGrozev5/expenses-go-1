@@ -12,6 +12,7 @@ var dbConn map[string]repository.DatabaseRepo
 var infoLog *log.Logger
 var errorLog *log.Logger
 var dbPath = flag.String("db-path", "./db/", "Path to folder containing sqlite databases")
+var jwtKey = flag.String("jwt-key", "super secret key", "Secret key for signing Json Web Tokens")
 
 // Setup app wide state
 func setupAppState() {
@@ -35,4 +36,7 @@ func setupAppState() {
 
 	// Set db path
 	app.DBPath = *dbPath
+
+	// Set jwt key
+	app.JWTKey = *jwtKey
 }

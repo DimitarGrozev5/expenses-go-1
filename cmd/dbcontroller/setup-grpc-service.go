@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
+	"github.com/dimitargrozev5/expenses-go-1/internal/rpcserver"
 	"google.golang.org/grpc"
 )
 
@@ -42,22 +42,17 @@ func setupGrpcService() {
 	// 	}
 	// 	opts = []grpc.ServerOption{grpc.Creds(creds)}
 	// }
+
+	// Create server
 	grpcServer := grpc.NewServer(opts...)
-	models.RegisterDatabaseServer(grpcServer, &databaseServer{})
+
+	// Create service
+	databaseServer := rpcserver.NewService(&app)
+
+	// Register server
+	models.RegisterDatabaseServer(grpcServer, databaseServer)
 
 	// Start grpc server
 	fmt.Printf("Starting gRPC server on port %d", *port)
 	grpcServer.Serve(lis)
-}
-
-type databaseServer struct {
-	models.UnimplementedDatabaseServer
-}
-
-func (s *databaseServer) Ping(ctx context.Context, msg *models.SimpleMessage) (*models.SimpleMessage, error) {
-	if msg.Msg == "Ping" {
-		return &models.SimpleMessage{Msg: "Pong"}, nil
-	}
-
-	return &models.SimpleMessage{Msg: "No message"}, nil
 }

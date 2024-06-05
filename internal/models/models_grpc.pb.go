@@ -24,6 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type DatabaseClient interface {
 	// Simple ping method
 	Ping(ctx context.Context, in *SimpleMessage, opts ...grpc.CallOption) (*SimpleMessage, error)
+	// Authenticate
+	Authenticate(ctx context.Context, in *LoginCredentials, opts ...grpc.CallOption) (*LoginToken, error)
 }
 
 type databaseClient struct {
@@ -43,12 +45,23 @@ func (c *databaseClient) Ping(ctx context.Context, in *SimpleMessage, opts ...gr
 	return out, nil
 }
 
+func (c *databaseClient) Authenticate(ctx context.Context, in *LoginCredentials, opts ...grpc.CallOption) (*LoginToken, error) {
+	out := new(LoginToken)
+	err := c.cc.Invoke(ctx, "/Database/Authenticate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DatabaseServer is the server API for Database service.
 // All implementations must embed UnimplementedDatabaseServer
 // for forward compatibility
 type DatabaseServer interface {
 	// Simple ping method
 	Ping(context.Context, *SimpleMessage) (*SimpleMessage, error)
+	// Authenticate
+	Authenticate(context.Context, *LoginCredentials) (*LoginToken, error)
 	mustEmbedUnimplementedDatabaseServer()
 }
 
@@ -58,6 +71,9 @@ type UnimplementedDatabaseServer struct {
 
 func (UnimplementedDatabaseServer) Ping(context.Context, *SimpleMessage) (*SimpleMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedDatabaseServer) Authenticate(context.Context, *LoginCredentials) (*LoginToken, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Authenticate not implemented")
 }
 func (UnimplementedDatabaseServer) mustEmbedUnimplementedDatabaseServer() {}
 
@@ -90,6 +106,24 @@ func _Database_Ping_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Database_Authenticate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginCredentials)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServer).Authenticate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Database/Authenticate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServer).Authenticate(ctx, req.(*LoginCredentials))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Database_ServiceDesc is the grpc.ServiceDesc for Database service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -100,6 +134,10 @@ var Database_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _Database_Ping_Handler,
+		},
+		{
+			MethodName: "Authenticate",
+			Handler:    _Database_Authenticate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

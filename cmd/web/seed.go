@@ -52,7 +52,7 @@ func Seed(DBPath string) {
 	}
 
 	// Get db repo
-	repo := dbrepo.NewSqliteRepo(&config.AppConfig{}, userEmil, dbconn.SQL)
+	repo := dbrepo.NewSqliteRepo(&config.DBControllerConfig{}, userEmil, dbconn.SQL)
 
 	// Add accounts
 	repo.AddAccount("ДСК Спестовна") // 1

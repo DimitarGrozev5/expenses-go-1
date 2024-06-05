@@ -69,7 +69,7 @@ The project is a golang server that keeps the sqlite databases localy and doesn'
 
 ### Stage 2
 
-For Stage 2 I will split the project in to two parts. The main server, that renders content for the users and a database server, that contains all of the logic for connecting and communicating with the db. This seems like an unnecessary transition but it's a neccessary step if I want to make a horizontally scalable sqlite database. It also decouples the user facing part from the buisness logic and I may end up converting that to NextJS. My initial plan is to use gRPC for communicating between the different parts of the system, but we shall see.
+For Stage 2 I will split the project in to two parts. The main server, that renders content for the users and a database server, that contains all of the logic for connecting and communicating with the db. This seems like an unnecessary transition but it's a neccessary step if I want to make a horizontally scalable sqlite database. It also decouples the user facing part from the buisness logic and I may end up converting that to NextJS. The communication between services will happen in gRPC firstly because it's a fun new thing to try, seondly because it's a flexible and robust way to organize service-to-service communication.
 
 ## Project elements
 
@@ -126,3 +126,9 @@ The handler package expects to have access to DB repositories, one for each user
 #### Frontend code
 
 I've made a point not to use external libraries. Not for any good reason, but because I find it fun to develop js code from scratch.
+
+### Stage 2
+
+#### DB Controller
+
+The database controller will take care of interacting with the database and authenticating the user.
