@@ -8,7 +8,7 @@ import (
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
 )
 
-var dbConn map[string]repository.DatabaseRepo
+var dbConn = map[string]repository.DatabaseRepo{}
 var infoLog *log.Logger
 var errorLog *log.Logger
 var dbPath = flag.String("db-path", "./db/", "Path to folder containing sqlite databases")
