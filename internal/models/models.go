@@ -5,13 +5,6 @@ import (
 	"time"
 )
 
-// NewExpense model
-type NewExpense struct {
-	Amount float64
-	Tag    string
-	Date   string
-}
-
 // Users
 type User struct {
 	ID        int
