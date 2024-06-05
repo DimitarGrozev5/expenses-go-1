@@ -107,7 +107,7 @@ func run(conn *grpc.ClientConn) error {
 	client := models.NewDatabaseClient(conn)
 
 	// Create handlers repo
-	repo := handlers.NewRepo(&app, &client)
+	repo := handlers.NewRepo(&app, client)
 	handlers.NewHandlers(repo)
 
 	// Seed DB

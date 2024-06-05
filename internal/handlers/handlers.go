@@ -17,12 +17,12 @@ var Repo *Repository
 // Repository type
 type Repository struct {
 	App      *config.AppConfig
-	DBClient *models.DatabaseClient
+	DBClient models.DatabaseClient
 	DB       map[string]repository.DatabaseRepo
 }
 
 // Creates a new repsoitory
-func NewRepo(a *config.AppConfig, dbClient *models.DatabaseClient) *Repository {
+func NewRepo(a *config.AppConfig, dbClient models.DatabaseClient) *Repository {
 	return &Repository{
 		App:      a,
 		DBClient: dbClient,
