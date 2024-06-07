@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-// import "google/protobuf/timestamp.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/dimitargrozev5/expenses-go-1/internal/models";
 
@@ -8,6 +8,9 @@ option go_package = "github.com/dimitargrozev5/expenses-go-1/internal/models";
 message SimpleMessage {
     string msg = 1;
 }
+
+// Empty message
+message GrpcEmpty {}
 
 // Login credentials
 message LoginCredentials {
@@ -18,10 +21,254 @@ message LoginToken {
     string token = 1;
 }
 
+// User
+message GrpcUser {
+	int64 ID = 1;
+	string Email = 2;
+	string Password = 3;
+	int64 DBVersion = 4;
+	double FreeFunds = 5;
+	google.protobuf.Timestamp CreatedAt = 6;
+	optional google.protobuf.Timestamp UpdatedAt = 7;
+}
+
+// Expenses
+message GrpcExpense {
+	int64 ID = 1;
+	double Amount = 2;
+	google.protobuf.Timestamp Date = 3;
+	repeated GrpcTag Tags = 4;
+	int64 FromAccountId = 5;
+	GrpcAccount FromAccount = 6;
+	int64 FromCategoryId = 7;
+	GrpcCategory FromCategory = 8;
+	google.protobuf.Timestamp CreatedAt = 9;
+	optional google.protobuf.Timestamp UpdatedAt = 10;
+}
+
+// Tags
+message GrpcTag {
+	int64 ID = 1;
+	string Name = 2;
+	int64 UsageCount = 3;
+	google.protobuf.Timestamp CreatedAt = 4;
+	optional google.protobuf.Timestamp UpdatedAt = 5;
+}
+
+// Expense-Tag relation
+message GrpcExpenseToTagRealtion {
+	int64 ID = 1;
+	int64 ExpenseId = 2;
+	int64 TagId = 3;
+	google.protobuf.Timestamp CreatedAt = 4;
+	optional google.protobuf.Timestamp UpdatedAt = 5;
+}
+
+// Accounts
+message GrpcAccount {
+	int64 ID = 1;
+
+	string Name = 2;
+	double CurrentAmount = 3;
+
+	int64 UsageCount = 4;
+	int64 TableOrder = 5;
+
+	google.protobuf.Timestamp CreatedAt = 6;
+	optional google.protobuf.Timestamp UpdatedAt = 7;
+}
+
+// Categories
+message GrpcCategory {
+	int64 ID = 1;
+
+	string Name = 2;
+
+	double BudgetInput = 3;
+	google.protobuf.Timestamp LastInputDate = 4;
+	// time.Duration InputInterval = 5;
+
+	double SpendingLimit = 6;
+	double SpendingLeft = 7;
+
+	double InitialAmount = 8;
+	double CurrentAmount = 9;
+
+	int64 TableOrder = 10;
+	google.protobuf.Timestamp CreatedAt = 11;
+	optional google.protobuf.Timestamp UpdatedAt = 12;
+}
+
+message GrpcCategoryOverview {
+	int64 ID = 1;
+	string Name = 2;
+
+	double BudgetInput = 3;
+	int64 InputInterval = 4;
+	int64 InputPeriodId = 5;
+	string InputPeriodCaption = 6;
+
+	double SpendingLimit = 7;
+	double SpendingLeft = 8;
+
+	google.protobuf.Timestamp PeriodStart = 9;
+	google.protobuf.Timestamp PeriodEnd = 10;
+
+	double InitialAmount = 11;
+	double CurrentAmount = 12;
+
+	bool CanBeDeleted = 13;
+	int64 TableOrder = 14;
+}
+
+message GrpcResetCategoryData {
+	double Amount = 1;
+	int64 CategoryId = 2;
+	double BudgetInput = 3;
+	int64 InputInterval = 4;
+	int64 InputPeriod = 5;
+	double SpendingLimit = 6;
+}
+
+// Time periods
+message GrpcTimePeriod {
+	int64 ID = 1;
+	string Period = 2;
+	string Caption = 3;
+	google.protobuf.Timestamp CreatedAt = 4;
+	optional google.protobuf.Timestamp UpdatedAt = 5;
+}
+
+/*
+ * Functions params
+ */
+message ModifyFreeFundsParams {
+    double Amount = 1;
+    int64 ToAccountId = 2;
+    string TagName = 3;
+}
+
+message GetTagsReturns {
+    repeated GrpcTag Tags = 1;
+}
+
+message GetExpensesReturns {
+    repeated GrpcExpense Expenses = 1;
+}
+
+message ExpensesParams {
+    GrpcExpense Expense = 1;
+    repeated string Tags = 2;
+}
+
+message DeleteExpenseParams {
+    int64 ID = 1;
+}
+
+message GetAccountsParams {
+    bool OrderByPopularity = 1;
+}
+message GetAccountsReturns {
+    repeated GrpcAccount Accounts = 1;
+}
+
+message AddAccountParams {
+    string Name = 1;
+}
+
+message EditAccountNameParams {
+    int64 ID = 1;
+    string Name = 2;
+}
+
+message DeleteAccountParams {
+    int64 ID = 1;
+}
+
+message TransferFundsParams {
+    GrpcAccount FromAccount = 1;
+    GrpcAccount ToAccount = 2;
+    double Amount = 3;
+}
+
+message ReorderAccountParams {
+    GrpcAccount Account = 1;
+    int64 Direction = 2;
+}
+
+
+message AddCategoryParams {
+    string Name = 1;
+    double BudgetInput = 2;
+    double SpendingLimit = 3;
+    int64 InputInterval = 4;
+    int64 InputPeriod = 5;
+}
+
+message ReorderCategoryParams {
+    int64 CategoryId = 1;
+    int64 NewOrder = 2;
+}
+
+message DeleteCategoryParams {
+    int64 ID = 1;
+}
+
+message ResetCategoriesParams {
+    repeated GrpcResetCategoryData catgories = 1;
+}
+
+message GetCategoriesCountReturns {
+    int64 Count = 1;
+}
+
+message GetCategoriesReturns {
+    repeated GrpcCategory Categories = 1;
+}
+
+message GetCategoriesOverviewReturns {
+    repeated GrpcCategory Categories = 1;
+}
+
+message GetTimePeriodsReturns {
+    repeated GrpcTimePeriod TimePeriods = 1;
+}
+
 service Database {
     // Simple ping method
     rpc Ping(SimpleMessage) returns (SimpleMessage);
 
-    // Authenticate
+    // User
+    rpc GetUser(GrpcEmpty) returns (GrpcUser);
     rpc Authenticate(LoginCredentials) returns (LoginToken);
+    rpc ModifyFreeFunds(ModifyFreeFundsParams) returns (GrpcEmpty);
+
+    // Tags methods
+    rpc GetTags(GrpcEmpty) returns (GetTagsReturns);
+
+    // Expenses methods
+    rpc GetExpenses(GrpcEmpty) returns (GetExpensesReturns);
+    rpc AddExpense(ExpensesParams) returns (GrpcEmpty);
+    rpc EditExpense(ExpensesParams) returns (GrpcEmpty);
+    rpc DeleteExpense(DeleteExpenseParams) returns (GrpcEmpty);
+
+    // Accounts methods
+    rpc GetAccounts(GetAccountsParams) returns (GetAccountsReturns);
+    rpc AddAccount(AddAccountParams) returns (GrpcEmpty);
+    rpc EditAccountName(EditAccountNameParams) returns (GrpcEmpty);
+    rpc DeleteAccount(DeleteAccountParams) returns (GrpcEmpty);
+    rpc TransferFunds(TransferFundsParams) returns (GrpcEmpty);
+    rpc ReorderAccount(ReorderAccountParams) returns (GrpcEmpty);
+
+    // Categories methods
+    rpc GetCategoriesCount(GrpcEmpty) returns (GetCategoriesCountReturns);
+    rpc GetCategories(GrpcEmpty) returns (GetCategoriesReturns);
+    rpc GetCategoriesOverview(GrpcEmpty) returns (GetCategoriesOverviewReturns);
+    rpc AddCategory(AddCategoryParams) returns (GrpcEmpty);
+    rpc ReorderCategory(ReorderCategoryParams) returns (GrpcEmpty);
+    rpc DeleteCategory(DeleteCategoryParams) returns (GrpcEmpty);
+    rpc ResetCategories(ResetCategoriesParams) returns (GrpcEmpty);
+
+    // Time periods
+	rpc GetTimePeriods(GrpcEmpty) returns (GetTimePeriodsReturns);
 }
