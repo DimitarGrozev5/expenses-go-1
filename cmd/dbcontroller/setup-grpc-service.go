@@ -43,11 +43,17 @@ func setupGrpcService() {
 	// 	opts = []grpc.ServerOption{grpc.Creds(creds)}
 	// }
 
-	// Create server
-	grpcServer := grpc.NewServer(opts...)
-
 	// Create service
 	databaseServer := rpcserver.NewService(&app)
+
+	// Register server
+	rpcserver.NewDatabaseServer(databaseServer)
+
+	// Add JWT token interceptor
+	opts = append(opts, grpc.UnaryInterceptor(rpcserver.Server.AuthInterceptor))
+
+	// Create server
+	grpcServer := grpc.NewServer(opts...)
 
 	// Register server
 	models.RegisterDatabaseServer(grpcServer, databaseServer)

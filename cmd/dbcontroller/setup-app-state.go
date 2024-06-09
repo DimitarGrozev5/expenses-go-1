@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"flag"
 	"log"
 	"os"
@@ -14,7 +12,7 @@ var dbConn = map[string]repository.DatabaseRepo{}
 var infoLog *log.Logger
 var errorLog *log.Logger
 var dbPath = flag.String("db-path", "./db/", "Path to folder containing sqlite databases")
-var jwtKeyPath = flag.String("jwt-key-path", "./keys/jwt.pem", "Secret key for signing Json Web Tokens")
+var jwtSecretKey = flag.String("jwt-secret-key", "secret key", "Secret key for signing Json Web Tokens")
 
 // Setup app wide state
 func setupAppState() {
@@ -39,24 +37,24 @@ func setupAppState() {
 	// Set db path
 	app.DBPath = *dbPath
 
-	// Read the PEM file
-	pemData, err := os.ReadFile(*jwtKeyPath)
-	if err != nil {
-		log.Fatalf("Error reading PEM file: %v", err)
-	}
+	// // Read the PEM file
+	// pemData, err := os.ReadFile(*jwtKeyPath)
+	// if err != nil {
+	// 	log.Fatalf("Error reading PEM file: %v", err)
+	// }
 
-	// Decode the PEM block
-	pemBlock, _ := pem.Decode(pemData)
-	if pemBlock == nil || pemBlock.Type != "EC PRIVATE KEY" {
-		log.Fatalf("Failed to decode PEM block containing private key")
-	}
+	// // Decode the PEM block
+	// pemBlock, _ := pem.Decode(pemData)
+	// if pemBlock == nil || pemBlock.Type != "EC PRIVATE KEY" {
+	// 	log.Fatalf("Failed to decode PEM block containing private key")
+	// }
 
-	// Parse the ECDSA private key
-	privateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
-	if err != nil {
-		log.Fatalf("Error parsing ECDSA private key: %v", err)
-	}
+	// // Parse the ECDSA private key
+	// privateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
+	// if err != nil {
+	// 	log.Fatalf("Error parsing ECDSA private key: %v", err)
+	// }
 
 	// Set jwt key
-	app.JWTKey = privateKey
+	app.JWTSecretKey = []byte(*jwtSecretKey)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -63,12 +64,13 @@ func (m *DatabaseServer) Authenticate(ctx context.Context, lc *models.LoginCrede
 	m.App.DBConnections[key] = repo
 
 	// Crate JWT to authenticate user
-	t := jwt.NewWithClaims(jwt.SigningMethodES256,
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, //jwt.SigningMethodES256,
 		jwt.MapClaims{
 			"userKey":   key,
 			"dbVersion": dbVersion,
+			"exp":       time.Now().Add(time.Hour * 24).Unix(),
 		})
-	jwt, err := t.SignedString(m.App.JWTKey)
+	jwt, err := t.SignedString(m.App.JWTSecretKey)
 	if err != nil {
 		return &loginResponse, err
 	}

@@ -37,6 +37,7 @@ func main() {
 	// Start gRPC client
 	var opts = []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(authInterceptor),
 	}
 
 	conn, err := grpc.NewClient(*dbAddr, opts...)
