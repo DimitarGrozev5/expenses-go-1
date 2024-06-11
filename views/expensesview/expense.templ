@@ -15,7 +15,7 @@ func opened(form *forms.Form) bool {
 	return !form.Valid()
 }
 
-templ ExpenseCard(expense models.Expense, tags []models.Tag, accounts []models.Account, categories []models.Category, editForm *forms.Form, csrfToken string) {
+templ ExpenseCard(expense models.Expense, tags []models.Tag, accounts []*models.GrpcAccount, categories []models.Category, editForm *forms.Form, csrfToken string) {
 	@cards.Card() {
 		<div class="flex flex-row items-stretch gap-4 flex-wrap">
 			<div class="flex-1 flex flex-col items-center justify-center gap-0.5">

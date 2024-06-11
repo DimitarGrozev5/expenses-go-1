@@ -11,7 +11,7 @@ type AccountSelectProps struct {
 	Error    string
 }
 
-templ AccountSelect(accounts []models.Account, props AccountSelectProps) {
+templ AccountSelect(accounts []*models.GrpcAccount, props AccountSelectProps) {
 	<div class="flex flex-col items-stretch">
 		<label for={ props.Name }>{ props.Label }</label>
 		<select

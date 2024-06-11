@@ -43,9 +43,9 @@ func (m *Repository) GetDB(r *http.Request) (repository.DatabaseRepo, bool) {
 
 // Close all DB connections
 func (m *Repository) CloseAllConnections() {
-	for _, dbconn := range m.DB {
-		dbconn.Close()
-	}
+	// for _, dbconn := range m.DB {
+	// 	dbconn.Close()
+	// }
 }
 
 // Add default data to template

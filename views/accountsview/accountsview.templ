@@ -8,7 +8,7 @@ import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 // Page data
 type AccountsData struct {
 	models.TemplateData
-	Accounts  []models.Account
+	Accounts  []*models.GrpcAccount
 	FreeFunds float64
 	Tags      []models.Tag
 }

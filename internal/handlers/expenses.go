@@ -1,32 +1,25 @@
 package handlers
 
 import (
-	"fmt"
-	"log"
 	"net/http"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/views/expensesview"
-	"github.com/go-chi/chi"
 )
 
 func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 
 	// Get db repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Cannot get DB repo")
-		m.AddErrorMsg(r, "Please login to view expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Cannot get DB repo")
+	// 	m.AddErrorMsg(r, "Please login to view expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
 	// Get accounts
-	accounts, err := repo.GetAccounts(true)
+	accounts, err := m.DBClient.GetAccounts(r.Context(), &models.GetAccountsParams{OrderByPopularity: true})
 	if err != nil {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting expenses")
@@ -34,44 +27,44 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If there are no accounts redirect to accounts page and prompt user to create an account
-	if len(accounts) == 0 {
-		m.AddWarningMsg(r, "You have to create a Payment Account before you can add Expenses")
-		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
-		return
-	}
+	// // If there are no accounts redirect to accounts page and prompt user to create an account
+	// if len(accounts) == 0 {
+	// 	m.AddWarningMsg(r, "You have to create a Payment Account before you can add Expenses")
+	// 	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Get categories
-	categories, err := repo.GetCategories()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-		return
-	}
+	// // Get categories
+	// categories, err := repo.GetCategories()
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Error getting expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// If there are no categories redirect to categories page and prompt user to create a category
-	if len(categories) == 0 {
-		m.AddWarningMsg(r, "You have to create a Budget Category before you can add Expenses")
-		http.Redirect(w, r, "/categories", http.StatusSeeOther)
-		return
-	}
+	// // If there are no categories redirect to categories page and prompt user to create a category
+	// if len(categories) == 0 {
+	// 	m.AddWarningMsg(r, "You have to create a Budget Category before you can add Expenses")
+	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Get all expenses
-	expenses, err := repo.GetExpenses()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get all expenses
+	// expenses, err := repo.GetExpenses()
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Error getting expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Get all tags
-	tags, err := repo.GetTags()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting data")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get all tags
+	// tags, err := repo.GetTags()
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Error getting data")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
 	// Get template data
 	td := models.TemplateData{
@@ -88,27 +81,27 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add forms for expenses
-	for _, expense := range expenses {
-		// Get form names
-		edit := fmt.Sprintf("edit-%d", expense.ID)
-		delete := fmt.Sprintf("delete-%d", expense.ID)
+	// for _, expense := range expenses {
+	// 	// Get form names
+	// 	edit := fmt.Sprintf("edit-%d", expense.ID)
+	// 	delete := fmt.Sprintf("delete-%d", expense.ID)
 
-		// Get expense tags as []string
-		tags := make([]string, 0, len(expense.Tags))
-		for _, tag := range expense.Tags {
-			tags = append(tags, tag.Name)
-		}
+	// 	// Get expense tags as []string
+	// 	tags := make([]string, 0, len(expense.Tags))
+	// 	for _, tag := range expense.Tags {
+	// 		tags = append(tags, tag.Name)
+	// 	}
 
-		// Add forms
-		td.Form[edit] = forms.NewFromMap(map[string]string{
-			"amount":        fmt.Sprintf("%0.2f", expense.Amount),
-			"tags":          strings.Join(tags, ","),
-			"date":          fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
-			"from_account":  fmt.Sprintf("%d", expense.FromAccount.ID),
-			"from_category": fmt.Sprintf("%d", expense.FromCategory.ID),
-		})
-		td.Form[delete] = forms.New(nil)
-	}
+	// 	// Add forms
+	// 	td.Form[edit] = forms.NewFromMap(map[string]string{
+	// 		"amount":        fmt.Sprintf("%0.2f", expense.Amount),
+	// 		"tags":          strings.Join(tags, ","),
+	// 		"date":          fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
+	// 		"from_account":  fmt.Sprintf("%d", expense.FromAccount.ID),
+	// 		"from_category": fmt.Sprintf("%d", expense.FromCategory.ID),
+	// 	})
+	// 	td.Form[delete] = forms.New(nil)
+	// }
 
 	// Add default data
 	m.AddDefaultData(&td, r)
@@ -116,10 +109,10 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	// Setup page data
 	data := expensesview.ExpensesData{
 		TemplateData: td,
-		Expenses:     expenses,
-		Tags:         tags,
-		Accounts:     accounts,
-		Categories:   categories,
+		// Expenses:     expenses,
+		// Tags:         tags,
+		Accounts: accounts.Accounts,
+		// Categories:   categories,
 	}
 
 	// Render view
@@ -128,189 +121,189 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 
 func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 
-	// Parse form
-	err := r.ParseForm()
-	if err != nil {
-		log.Println(err)
-	}
+	// // Parse form
+	// err := r.ParseForm()
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	// Get form and validate fields
-	form := forms.New(r.PostForm)
-	form.Required("amount", "tags", "from_account", "from_category", "date")
-	form.IsFloat64("amount")
-	form.MinLength("tags", 3)
-	form.IsDate("date", "2006-01-02T15:04")
+	// // Get form and validate fields
+	// form := forms.New(r.PostForm)
+	// form.Required("amount", "tags", "from_account", "from_category", "date")
+	// form.IsFloat64("amount")
+	// form.MinLength("tags", 3)
+	// form.IsDate("date", "2006-01-02T15:04")
 
-	if !form.Valid() {
+	// if !form.Valid() {
 
-		// Push form to session
-		m.AddForms(r, map[string]*forms.Form{
-			"add-expense": form,
-		})
+	// 	// Push form to session
+	// 	m.AddForms(r, map[string]*forms.Form{
+	// 		"add-expense": form,
+	// 	})
 
-		// Redirect to expenses
-		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+	// 	// Redirect to expenses
+	// 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
 
-		return
-	}
+	// 	return
+	// }
 
-	// Get data
-	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
-	fromAccountId, _ := strconv.ParseInt(form.Get("from_account"), 10, 64)
-	fromCategoryId, _ := strconv.ParseInt(form.Get("from_category"), 10, 64)
-	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
+	// // Get data
+	// amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
+	// fromAccountId, _ := strconv.ParseInt(form.Get("from_account"), 10, 64)
+	// fromCategoryId, _ := strconv.ParseInt(form.Get("from_category"), 10, 64)
+	// date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
 
-	// Get tags
-	re := regexp.MustCompile(`,\s*`)
+	// // Get tags
+	// re := regexp.MustCompile(`,\s*`)
 
-	// Get db repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Cannot get DB repo")
-		m.AddErrorMsg(r, "Please login to view expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get db repo
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Cannot get DB repo")
+	// 	m.AddErrorMsg(r, "Please login to view expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Split tags field
-	tags := re.Split(form.Get("tags"), -1)
+	// // Split tags field
+	// tags := re.Split(form.Get("tags"), -1)
 
-	expense := models.Expense{
-		Amount:         amount,
-		Date:           date,
-		FromAccountId:  int(fromAccountId),
-		FromCategoryId: int(fromCategoryId),
-	}
+	// expense := models.Expense{
+	// 	Amount:         amount,
+	// 	Date:           date,
+	// 	FromAccountId:  int(fromAccountId),
+	// 	FromCategoryId: int(fromCategoryId),
+	// }
 
-	// Add expense to database
-	err = repo.AddExpense(expense, tags)
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Failed to add expense")
-		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
-		return
-	}
+	// // Add expense to database
+	// err = repo.AddExpense(expense, tags)
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Failed to add expense")
+	// 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Add success message
-	m.AddFlashMsg(r, "Expense added")
+	// // Add success message
+	// m.AddFlashMsg(r, "Expense added")
 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
 }
 
 // Edit expense
 func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
-	// Parse form
-	err := r.ParseForm()
-	if err != nil {
-		log.Println(err)
-	}
+	// // Parse form
+	// err := r.ParseForm()
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	// Get expense id from route param
-	idParam := chi.URLParam(r, "expenseId")
-	id, err := strconv.ParseInt(idParam, 10, 32)
-	if idParam == "" || err != nil {
-		m.AddErrorMsg(r, "Invalid expense")
-		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
-		return
-	}
+	// // Get expense id from route param
+	// idParam := chi.URLParam(r, "expenseId")
+	// id, err := strconv.ParseInt(idParam, 10, 32)
+	// if idParam == "" || err != nil {
+	// 	m.AddErrorMsg(r, "Invalid expense")
+	// 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Get form and validate fields
-	form := forms.New(r.PostForm)
-	form.Required("amount", "tags", "from_account", "from_category", "date")
-	form.IsFloat64("amount")
-	form.MinLength("tags", 3)
-	form.IsDate("date", "2006-01-02T15:04")
+	// // Get form and validate fields
+	// form := forms.New(r.PostForm)
+	// form.Required("amount", "tags", "from_account", "from_category", "date")
+	// form.IsFloat64("amount")
+	// form.MinLength("tags", 3)
+	// form.IsDate("date", "2006-01-02T15:04")
 
-	if !form.Valid() {
+	// if !form.Valid() {
 
-		// Push form to session
-		m.AddForms(r, map[string]*forms.Form{
-			fmt.Sprintf("edit-%d", id): form,
-		})
+	// 	// Push form to session
+	// 	m.AddForms(r, map[string]*forms.Form{
+	// 		fmt.Sprintf("edit-%d", id): form,
+	// 	})
 
-		// Redirect to expenses
-		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+	// 	// Redirect to expenses
+	// 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
 
-		return
-	}
+	// 	return
+	// }
 
-	// Get data
-	amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
-	fromAccountId, _ := strconv.ParseInt(form.Get("from_account"), 10, 64)
-	fromCategoryId, _ := strconv.ParseInt(form.Get("from_category"), 10, 64)
-	date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
+	// // Get data
+	// amount, _ := strconv.ParseFloat(form.Get("amount"), 64)
+	// fromAccountId, _ := strconv.ParseInt(form.Get("from_account"), 10, 64)
+	// fromCategoryId, _ := strconv.ParseInt(form.Get("from_category"), 10, 64)
+	// date, _ := time.Parse("2006-01-02T15:04", form.Get("date"))
 
-	// Get tags
-	re := regexp.MustCompile(`,\s*`)
+	// // Get tags
+	// re := regexp.MustCompile(`,\s*`)
 
-	// Get db repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Cannot get DB repo")
-		m.AddErrorMsg(r, "Please login to view expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get db repo
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Cannot get DB repo")
+	// 	m.AddErrorMsg(r, "Please login to view expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Split tags field
-	tags := re.Split(form.Get("tags"), -1)
+	// // Split tags field
+	// tags := re.Split(form.Get("tags"), -1)
 
-	expense := models.Expense{
-		ID:             int(id),
-		Amount:         amount,
-		Date:           date,
-		FromAccountId:  int(fromAccountId),
-		FromCategoryId: int(fromCategoryId),
-	}
+	// expense := models.Expense{
+	// 	ID:             int(id),
+	// 	Amount:         amount,
+	// 	Date:           date,
+	// 	FromAccountId:  int(fromAccountId),
+	// 	FromCategoryId: int(fromCategoryId),
+	// }
 
-	// Add expense to database
-	err = repo.EditExpense(expense, tags)
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Failed to edit expense")
-		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
-		return
-	}
+	// // Add expense to database
+	// err = repo.EditExpense(expense, tags)
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Failed to edit expense")
+	// 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Add success message
-	m.AddFlashMsg(r, "Expense updated")
+	// // Add success message
+	// m.AddFlashMsg(r, "Expense updated")
 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
 }
 
 // Delete expense
 func (m *Repository) PostDeleteExpense(w http.ResponseWriter, r *http.Request) {
 
-	// Parse form
-	err := r.ParseForm()
-	if err != nil {
-		log.Println(err)
-	}
+	// // Parse form
+	// err := r.ParseForm()
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	// Get expense id from route param
-	idParam := chi.URLParam(r, "expenseId")
-	id, err := strconv.ParseInt(idParam, 10, 32)
-	if idParam == "" || err != nil {
-		m.AddErrorMsg(r, "Invalid expense")
-		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
-		return
-	}
+	// // Get expense id from route param
+	// idParam := chi.URLParam(r, "expenseId")
+	// id, err := strconv.ParseInt(idParam, 10, 32)
+	// if idParam == "" || err != nil {
+	// 	m.AddErrorMsg(r, "Invalid expense")
+	// 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Get DB repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Failed to get DB repo")
-		m.AddErrorMsg(r, "Log in before adding expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get DB repo
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Failed to get DB repo")
+	// 	m.AddErrorMsg(r, "Log in before adding expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Delete expense from database
-	err = repo.DeleteExpense(int(id))
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Failed to delete expense")
-		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
-		return
-	}
+	// // Delete expense from database
+	// err = repo.DeleteExpense(int(id))
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Failed to delete expense")
+	// 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Add success message
-	m.AddFlashMsg(r, "Expense deleted")
+	// // Add success message
+	// m.AddFlashMsg(r, "Expense deleted")
 	http.Redirect(w, r, "/expenses", http.StatusSeeOther)
 }

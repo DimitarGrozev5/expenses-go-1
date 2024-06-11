@@ -7,7 +7,7 @@ import "github.com/dimitargrozev5/expenses-go-1/views/components/buttons"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
 
-templ AccountCard(account models.Account, first, last bool, csrfToken string) {
+templ AccountCard(account *models.GrpcAccount, first, last bool, csrfToken string) {
 	@cards.Card() {
 		<div class="flex flex-row items-center gap-4">
 			<div class="flex flex-col items-center justify-center self-stretch gap-1 -ml-2 -my-2">

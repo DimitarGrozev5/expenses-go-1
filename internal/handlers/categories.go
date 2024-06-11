@@ -3,94 +3,91 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/views/categoriesview"
-	"github.com/go-chi/chi"
 )
 
 func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
-	// Get db repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Cannot get DB repo")
-		m.AddErrorMsg(r, "Please login to view expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get db repo
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Cannot get DB repo")
+	// 	m.AddErrorMsg(r, "Please login to view expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Get all categories
-	categories, err := repo.GetCategoriesOverview()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting categories")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get all categories
+	// categories, err := repo.GetCategoriesOverview()
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Error getting categories")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Get time periods
-	periods, err := repo.GetTimePeriods()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting categories")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get time periods
+	// periods, err := repo.GetTimePeriods()
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Error getting categories")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Get user data
-	user, err := repo.GetUser()
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Error getting categories")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get user data
+	// user, err := repo.GetUser()
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Error getting categories")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Set default unused categories
-	defaultUnused := make([]string, 0, len(categories))
-	for _, category := range categories {
-		defaultUnused = append(defaultUnused, categoryToFormString(category))
-	}
+	// // Set default unused categories
+	// defaultUnused := make([]string, 0, len(categories))
+	// for _, category := range categories {
+	// 	defaultUnused = append(defaultUnused, categoryToFormString(category))
+	// }
 
-	// Set category reset form
-	resetForm := forms.NewFromMap(map[string]string{"unused-categories": strings.Join(defaultUnused, ";"), "used-categories": ""})
+	// // Set category reset form
+	// resetForm := forms.NewFromMap(map[string]string{"unused-categories": strings.Join(defaultUnused, ";"), "used-categories": ""})
 
-	// Get template data
-	td := models.TemplateData{
-		Title: "Categories",
-		Form: map[string]*forms.Form{
-			"add-category":     forms.New(nil),
-			"reset-categories": resetForm,
-		},
-	}
+	// // Get template data
+	// td := models.TemplateData{
+	// 	Title: "Categories",
+	// 	Form: map[string]*forms.Form{
+	// 		"add-category":     forms.New(nil),
+	// 		"reset-categories": resetForm,
+	// 	},
+	// }
 
-	// Add forms for expenses
-	for _, category := range categories {
-		// Get form names
-		moveUp := fmt.Sprintf("move-up-%d", category.ID)
-		moveDown := fmt.Sprintf("move-down-%d", category.ID)
-		delete := fmt.Sprintf("delete-%d", category.ID)
+	// // Add forms for expenses
+	// for _, category := range categories {
+	// 	// Get form names
+	// 	moveUp := fmt.Sprintf("move-up-%d", category.ID)
+	// 	moveDown := fmt.Sprintf("move-down-%d", category.ID)
+	// 	delete := fmt.Sprintf("delete-%d", category.ID)
 
-		// Add forms
-		td.Form[moveUp] = forms.NewFromMap(map[string]string{
-			"table_order": fmt.Sprintf("%d", category.TableOrder),
-		})
-		td.Form[moveDown] = forms.NewFromMap(map[string]string{
-			"table_order": fmt.Sprintf("%d", category.TableOrder),
-		})
-		td.Form[delete] = forms.New(nil)
-	}
+	// 	// Add forms
+	// 	td.Form[moveUp] = forms.NewFromMap(map[string]string{
+	// 		"table_order": fmt.Sprintf("%d", category.TableOrder),
+	// 	})
+	// 	td.Form[moveDown] = forms.NewFromMap(map[string]string{
+	// 		"table_order": fmt.Sprintf("%d", category.TableOrder),
+	// 	})
+	// 	td.Form[delete] = forms.New(nil)
+	// }
 
-	// Add default data
-	m.AddDefaultData(&td, r)
+	// // Add default data
+	// m.AddDefaultData(&td, r)
 
 	// Setup page data
 	data := categoriesview.CategoriesData{
-		TemplateData: td,
-		Categories:   categories,
-		TimePeriods:  periods,
-		FreeFunds:    user.FreeFunds,
+		// TemplateData: td,
+		// Categories:   categories,
+		// TimePeriods:  periods,
+		// FreeFunds:    user.FreeFunds,
 	}
 
 	// Render view
@@ -99,133 +96,133 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 
 func (m *Repository) PostNewCategory(w http.ResponseWriter, r *http.Request) {
 
-	// Parse form
-	err := r.ParseForm()
-	if err != nil {
-		log.Println(err)
-	}
+	// // Parse form
+	// err := r.ParseForm()
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	// Get db repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Cannot get DB repo")
-		m.AddErrorMsg(r, "Please login to view expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get db repo
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Cannot get DB repo")
+	// 	m.AddErrorMsg(r, "Please login to view expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Get form and validate fields
-	form := forms.New(r.PostForm)
-	form.Required("name", "budget_input", "spending_limit", "input_interval", "input_period")
-	form.MinLength("name", 4)
+	// // Get form and validate fields
+	// form := forms.New(r.PostForm)
+	// form.Required("name", "budget_input", "spending_limit", "input_interval", "input_period")
+	// form.MinLength("name", 4)
 
-	form.IsFloat64("budget_input")
-	form.Min("budget_input", 0)
+	// form.IsFloat64("budget_input")
+	// form.Min("budget_input", 0)
 
-	form.IsFloat64("spending_limit")
-	form.Min("spending_limit", 0)
+	// form.IsFloat64("spending_limit")
+	// form.Min("spending_limit", 0)
 
-	form.IsInt("input_interval")
-	form.Min("input_interval", 1)
+	// form.IsInt("input_interval")
+	// form.Min("input_interval", 1)
 
-	form.IsInt("input_period")
+	// form.IsInt("input_period")
 
-	if !form.Valid() {
+	// if !form.Valid() {
 
-		// Push form to session
-		m.AddForms(r, map[string]*forms.Form{
-			"add-category": form,
-		})
+	// 	// Push form to session
+	// 	m.AddForms(r, map[string]*forms.Form{
+	// 		"add-category": form,
+	// 	})
 
-		// Redirect to categories
-		http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 	// Redirect to categories
+	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 
-		return
-	}
+	// 	return
+	// }
 
-	// Get data
-	name := form.Get("name")
-	budgetInput, _ := strconv.ParseFloat(form.Get("budget_input"), 64)
-	spendingLimit, _ := strconv.ParseFloat(form.Get("spending_limit"), 64)
-	inputInterval, _ := strconv.ParseInt(form.Get("input_interval"), 10, 64)
-	inputPeriod, _ := strconv.ParseInt(form.Get("input_period"), 10, 64)
+	// // Get data
+	// name := form.Get("name")
+	// budgetInput, _ := strconv.ParseFloat(form.Get("budget_input"), 64)
+	// spendingLimit, _ := strconv.ParseFloat(form.Get("spending_limit"), 64)
+	// inputInterval, _ := strconv.ParseInt(form.Get("input_interval"), 10, 64)
+	// inputPeriod, _ := strconv.ParseInt(form.Get("input_period"), 10, 64)
 
-	// Add category to database
-	err = repo.AddCategory(name, budgetInput, spendingLimit, int(inputInterval), int(inputPeriod))
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Failed to add category")
-		http.Redirect(w, r, "/categories", http.StatusSeeOther)
-		return
-	}
+	// // Add category to database
+	// err = repo.AddCategory(name, budgetInput, spendingLimit, int(inputInterval), int(inputPeriod))
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Failed to add category")
+	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Add success message
-	m.AddFlashMsg(r, "Category added")
+	// // Add success message
+	// m.AddFlashMsg(r, "Category added")
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
 
 func (m *Repository) PostMoveCategory(direction int) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Parse form
-		err := r.ParseForm()
-		if err != nil {
-			log.Println(err)
-		}
+		// // Parse form
+		// err := r.ParseForm()
+		// if err != nil {
+		// 	log.Println(err)
+		// }
 
-		// Get category id from route param
-		idParam := chi.URLParam(r, "categoryId")
-		id, err := strconv.ParseInt(idParam, 10, 32)
-		if idParam == "" || err != nil {
-			m.AddErrorMsg(r, "Invalid category")
-			http.Redirect(w, r, "/categories", http.StatusSeeOther)
-			return
-		}
+		// // Get category id from route param
+		// idParam := chi.URLParam(r, "categoryId")
+		// id, err := strconv.ParseInt(idParam, 10, 32)
+		// if idParam == "" || err != nil {
+		// 	m.AddErrorMsg(r, "Invalid category")
+		// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+		// 	return
+		// }
 
-		// Get form and validate fields
-		form := forms.New(r.PostForm)
-		form.Required("table_order")
-		form.IsInt("table_order")
+		// // Get form and validate fields
+		// form := forms.New(r.PostForm)
+		// form.Required("table_order")
+		// form.IsInt("table_order")
 
-		if !form.Valid() {
+		// if !form.Valid() {
 
-			// Get table name
-			directionWord := "up"
-			if direction < 0 {
-				directionWord = "down"
-			}
+		// 	// Get table name
+		// 	directionWord := "up"
+		// 	if direction < 0 {
+		// 		directionWord = "down"
+		// 	}
 
-			// Get form name
-			name := fmt.Sprintf("move-%s-%d", directionWord, id)
+		// 	// Get form name
+		// 	name := fmt.Sprintf("move-%s-%d", directionWord, id)
 
-			// Push form to session
-			m.AddForms(r, map[string]*forms.Form{
-				name: form,
-			})
+		// 	// Push form to session
+		// 	m.AddForms(r, map[string]*forms.Form{
+		// 		name: form,
+		// 	})
 
-			// Redirect to expenses
-			http.Redirect(w, r, "/categories", http.StatusSeeOther)
+		// 	// Redirect to expenses
+		// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 
-			return
-		}
+		// 	return
+		// }
 
-		// Get db repo
-		repo, ok := m.GetDB(r)
-		if !ok {
-			m.App.ErrorLog.Println("Cannot get DB repo")
-			m.AddErrorMsg(r, "Please login to view categories")
-			http.Redirect(w, r, "/logout", http.StatusSeeOther)
-		}
+		// // Get db repo
+		// repo, ok := m.GetDB(r)
+		// if !ok {
+		// 	m.App.ErrorLog.Println("Cannot get DB repo")
+		// 	m.AddErrorMsg(r, "Please login to view categories")
+		// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		// }
 
-		// Get data from form
-		tableOrder, _ := strconv.ParseInt(form.Get("table_order"), 10, 64)
+		// // Get data from form
+		// tableOrder, _ := strconv.ParseInt(form.Get("table_order"), 10, 64)
 
-		// Update category position
-		err = repo.ReorderCategory(int(id), int(tableOrder)+direction)
-		if err != nil {
-			m.App.ErrorLog.Println(err)
-			m.AddErrorMsg(r, "Failed to move category")
-			http.Redirect(w, r, "/categories", http.StatusSeeOther)
-			return
-		}
+		// // Update category position
+		// err = repo.ReorderCategory(int(id), int(tableOrder)+direction)
+		// if err != nil {
+		// 	m.App.ErrorLog.Println(err)
+		// 	m.AddErrorMsg(r, "Failed to move category")
+		// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+		// 	return
+		// }
 
 		// Redirect
 		http.Redirect(w, r, "/categories", http.StatusSeeOther)
@@ -233,137 +230,137 @@ func (m *Repository) PostMoveCategory(direction int) func(w http.ResponseWriter,
 }
 
 func (m *Repository) PostDeleteCategory(w http.ResponseWriter, r *http.Request) {
-	// Parse form
-	err := r.ParseForm()
-	if err != nil {
-		log.Println(err)
-	}
+	// // Parse form
+	// err := r.ParseForm()
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	// Get category id from route param
-	idParam := chi.URLParam(r, "categoryId")
-	id, err := strconv.ParseInt(idParam, 10, 32)
-	if idParam == "" || err != nil {
-		m.AddErrorMsg(r, "Invalid category")
-		http.Redirect(w, r, "/categories", http.StatusSeeOther)
-		return
-	}
+	// // Get category id from route param
+	// idParam := chi.URLParam(r, "categoryId")
+	// id, err := strconv.ParseInt(idParam, 10, 32)
+	// if idParam == "" || err != nil {
+	// 	m.AddErrorMsg(r, "Invalid category")
+	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Get DB repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Failed to get DB repo")
-		m.AddErrorMsg(r, "Log in before deleting categories")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get DB repo
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Failed to get DB repo")
+	// 	m.AddErrorMsg(r, "Log in before deleting categories")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Delete category from database
-	err = repo.DeleteCategory(int(id))
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		if strings.HasPrefix(err.Error(), "cant delete a category that is used") {
-			m.AddErrorMsg(r, "Can't delete category that is being used")
-		} else {
-			m.AddErrorMsg(r, "Failed to delete category")
+	// // Delete category from database
+	// err = repo.DeleteCategory(int(id))
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	if strings.HasPrefix(err.Error(), "cant delete a category that is used") {
+	// 		m.AddErrorMsg(r, "Can't delete category that is being used")
+	// 	} else {
+	// 		m.AddErrorMsg(r, "Failed to delete category")
 
-		}
-		http.Redirect(w, r, "/categories", http.StatusSeeOther)
-		return
-	}
+	// 	}
+	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Add success message
-	m.AddFlashMsg(r, "Category deleted")
+	// // Add success message
+	// m.AddFlashMsg(r, "Category deleted")
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
 func (m *Repository) PostResetCategories1(w http.ResponseWriter, r *http.Request) {
 
-	m.AddErrorMsg(r, "Test redirect")
+	// m.AddErrorMsg(r, "Test redirect")
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
 
 func (m *Repository) PostResetCategories(w http.ResponseWriter, r *http.Request) {
 
-	// Parse form
-	err := r.ParseForm()
-	if err != nil {
-		log.Println(err)
-	}
+	// // Parse form
+	// err := r.ParseForm()
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	// Get db repo
-	repo, ok := m.GetDB(r)
-	if !ok {
-		m.App.ErrorLog.Println("Cannot get DB repo")
-		m.AddErrorMsg(r, "Please login to view expenses")
-		http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	}
+	// // Get db repo
+	// repo, ok := m.GetDB(r)
+	// if !ok {
+	// 	m.App.ErrorLog.Println("Cannot get DB repo")
+	// 	m.AddErrorMsg(r, "Please login to view expenses")
+	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	// }
 
-	// Get form and validate fields
-	form := forms.New(r.PostForm)
-	form.Required("used-categories")
+	// // Get form and validate fields
+	// form := forms.New(r.PostForm)
+	// form.Required("used-categories")
 
-	// Get used categories string
-	usedCategoriesString := form.Get("used-categories")
+	// // Get used categories string
+	// usedCategoriesString := form.Get("used-categories")
 
-	if !form.Valid() || len(usedCategoriesString) == 0 {
+	// if !form.Valid() || len(usedCategoriesString) == 0 {
 
-		// Push form to session
-		m.AddForms(r, map[string]*forms.Form{
-			"reset-categories": form,
-		})
+	// 	// Push form to session
+	// 	m.AddForms(r, map[string]*forms.Form{
+	// 		"reset-categories": form,
+	// 	})
 
-		// Redirect to categories
-		http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 	// Redirect to categories
+	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 
-		return
-	}
+	// 	return
+	// }
 
-	// Get categories for reset
-	cats := strings.Split(usedCategoriesString, ";")
+	// // Get categories for reset
+	// cats := strings.Split(usedCategoriesString, ";")
 
-	// Store reset category data
-	resetData := []models.ResetCategoryData{}
+	// // Store reset category data
+	// resetData := []models.ResetCategoryData{}
 
-	// Loop through categories
-	for _, cat := range cats {
-		// Get relevant data
-		category, err := formStringToCategory(cat)
-		if err != nil {
-			// Push form to session
-			m.AddForms(r, map[string]*forms.Form{
-				"reset-categories": form,
-			})
+	// // Loop through categories
+	// for _, cat := range cats {
+	// 	// Get relevant data
+	// 	category, err := formStringToCategory(cat)
+	// 	if err != nil {
+	// 		// Push form to session
+	// 		m.AddForms(r, map[string]*forms.Form{
+	// 			"reset-categories": form,
+	// 		})
 
-			// Add eror message
-			m.AddErrorMsg(r, "Error parsing data")
+	// 		// Add eror message
+	// 		m.AddErrorMsg(r, "Error parsing data")
 
-			// Redirect to categories
-			http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 		// Redirect to categories
+	// 		http.Redirect(w, r, "/categories", http.StatusSeeOther)
 
-			return
-		}
+	// 		return
+	// 	}
 
-		var data models.ResetCategoryData
+	// 	var data models.ResetCategoryData
 
-		data.Amount = category.InitialAmount
-		data.CategoryId = category.ID
-		data.BudgetInput = category.BudgetInput
-		data.InputInterval = category.InputInterval
-		data.InputPeriod = category.InputPeriodId
-		data.SpendingLimit = category.SpendingLimit
+	// 	data.Amount = category.InitialAmount
+	// 	data.CategoryId = category.ID
+	// 	data.BudgetInput = category.BudgetInput
+	// 	data.InputInterval = category.InputInterval
+	// 	data.InputPeriod = category.InputPeriodId
+	// 	data.SpendingLimit = category.SpendingLimit
 
-		resetData = append(resetData, data)
-	}
+	// 	resetData = append(resetData, data)
+	// }
 
-	// Reset all categories
-	err = repo.ResetCategories(resetData)
-	if err != nil {
-		m.App.ErrorLog.Println(err)
-		m.AddErrorMsg(r, "Failed to reset category")
-		http.Redirect(w, r, "/categories", http.StatusSeeOther)
-		return
-	}
+	// // Reset all categories
+	// err = repo.ResetCategories(resetData)
+	// if err != nil {
+	// 	m.App.ErrorLog.Println(err)
+	// 	m.AddErrorMsg(r, "Failed to reset category")
+	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Add success message
-	m.AddFlashMsg(r, "Categories reset")
+	// // Add success message
+	// m.AddFlashMsg(r, "Categories reset")
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
 

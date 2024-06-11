@@ -1,47 +1,41 @@
 package repository
 
 import (
-	"database/sql"
-
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 )
 
 type DatabaseRepo interface {
-	Close() error
-
 	// User methods
-	GetUser() (models.User, error)
+	// GetUser(empty *models.GrpcEmpty) (*models.GrpcUser, error)
 	Authenticate(testPassword string) (int, string, int, error)
-	ModifyFreeFunds(amount float64, toAccountId int, tagName string) error
+	// ModifyFreeFunds(params *models.ModifyFreeFundsParams) (*models.GrpcEmpty, error)
 
 	// Tags methods
-	GetTags() ([]models.Tag, error)
-	UpdateTags(tags []string, etx *sql.Tx) ([]models.Tag, error)
+	// GetTags(empty *models.GrpcEmpty) (*models.GetTagsReturns, error)
 
 	// Expense methods
-	GetExpenses() ([]models.Expense, error)
-	AddExpense(expense models.Expense, tags []string) error
-	EditExpense(expense models.Expense, tags []string) error
-	DeleteExpense(id int) error
+	// GetExpenses(param *models.GrpcEmpty) (*models.GetExpensesReturns, error)
+	// AddExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
+	// EditExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
+	// DeleteExpense(param *models.DeleteExpenseParams) (*models.GrpcEmpty, error)
 
 	// Account methods
-	GetAccounts(orderByPopularity bool) ([]models.Account, error)
-	AddAccount(name string) error
-	EditAccountName(id int, name string) error
-	DeleteAccount(id int) error
-	TransferFunds(fromAccount, toAccount models.Account, amount float64) error
-	ReorderAccount(currentAccount models.Account, direction int) error
+	GetAccounts(params *models.GetAccountsParams) (*models.GetAccountsReturns, error)
+	// AddAccount(params *models.AddAccountParams) (*models.GrpcEmpty, error)
+	// EditAccountName(params *models.EditAccountNameParams) (*models.GrpcEmpty, error)
+	// DeleteAccount(params *models.DeleteAccountParams) (*models.GrpcEmpty, error)
+	// TransferFunds(params *models.TransferFundsParams) (*models.GrpcEmpty, error)
+	// ReorderAccount(params *models.ReorderAccountParams) (*models.GrpcEmpty, error)
 
 	// Categories methods
-	GetCategoriesCount() (int, error)
-	GetCategories() ([]models.Category, error)
-	GetCategoriesOverview() ([]models.CategoryOverview, error)
-	AddCategory(name string, budgetInput float64, spendingLimit float64, inputInterval int, inputPeriod int) error
-	ReorderCategory(categoryid int, new_order int) error
-	DeleteCategory(id int) error
-	ResetCategory(amount float64, categoryId int, budgetInput float64, inputInterval int, inputPeriod int, spendingLimit float64, etx *sql.Tx) error
-	ResetCategories(categories []models.ResetCategoryData) error
+	// GetCategoriesCount(params *models.GrpcEmpty) (*models.GetCategoriesCountReturns, error)
+	// GetCategories(params *models.GrpcEmpty) (*models.GetCategoriesReturns, error)
+	// GetCategoriesOverview(params *models.GrpcEmpty) (*models.GetCategoriesOverviewReturns, error)
+	// AddCategory(params *models.AddCategoryParams) (*models.GrpcEmpty, error)
+	// ReorderCategory(params *models.ReorderCategoryParams) (*models.GrpcEmpty, error)
+	// DeleteCategory(params *models.DeleteCategoryParams) (*models.GrpcEmpty, error)
+	// ResetCategories(params *models.ResetCategoriesParams) (*models.GrpcEmpty, error)
 
 	// Time periods
-	GetTimePeriods() ([]models.TimePeriod, error)
+	// GetTimePeriods(empty *models.GrpcEmpty) (*models.GetTimePeriodsReturns, error)
 }

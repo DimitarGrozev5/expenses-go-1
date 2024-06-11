@@ -11,7 +11,7 @@ type ExpensesData struct {
 	models.TemplateData
 	Expenses   []models.Expense
 	Tags       []models.Tag
-	Accounts   []models.Account
+	Accounts   []*models.GrpcAccount
 	Categories []models.Category
 }
 
