@@ -10,7 +10,7 @@ type AccountsData struct {
 	models.TemplateData
 	Accounts  []*models.GrpcAccount
 	FreeFunds float64
-	Tags      []models.Tag
+	Tags      []*models.GrpcTag
 }
 
 templ (d AccountsData) View() {

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/forms"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
@@ -27,44 +29,44 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // If there are no accounts redirect to accounts page and prompt user to create an account
-	// if len(accounts) == 0 {
-	// 	m.AddWarningMsg(r, "You have to create a Payment Account before you can add Expenses")
-	// 	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
-	// 	return
-	// }
+	// If there are no accounts redirect to accounts page and prompt user to create an account
+	if len(accounts.Accounts) == 0 {
+		m.AddWarningMsg(r, "You have to create a Payment Account before you can add Expenses")
+		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+		return
+	}
 
-	// // Get categories
-	// categories, err := repo.GetCategories()
-	// if err != nil {
-	// 	m.App.ErrorLog.Println(err)
-	// 	m.AddErrorMsg(r, "Error getting expenses")
-	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	// 	return
-	// }
+	// Get categories
+	categories, err := m.DBClient.GetCategories(r.Context(), nil)
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
+	}
 
-	// // If there are no categories redirect to categories page and prompt user to create a category
-	// if len(categories) == 0 {
-	// 	m.AddWarningMsg(r, "You have to create a Budget Category before you can add Expenses")
-	// 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
-	// 	return
-	// }
+	// If there are no categories redirect to categories page and prompt user to create a category
+	if len(categories.Categories) == 0 {
+		m.AddWarningMsg(r, "You have to create a Budget Category before you can add Expenses")
+		http.Redirect(w, r, "/categories", http.StatusSeeOther)
+		return
+	}
 
-	// // Get all expenses
-	// expenses, err := repo.GetExpenses()
-	// if err != nil {
-	// 	m.App.ErrorLog.Println(err)
-	// 	m.AddErrorMsg(r, "Error getting expenses")
-	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	// }
+	// Get all expenses
+	expenses, err := m.DBClient.GetExpenses(r.Context(), nil)
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting expenses")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
 
-	// // Get all tags
-	// tags, err := repo.GetTags()
-	// if err != nil {
-	// 	m.App.ErrorLog.Println(err)
-	// 	m.AddErrorMsg(r, "Error getting data")
-	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	// }
+	// Get all tags
+	tags, err := m.DBClient.GetTags(r.Context(), nil)
+	if err != nil {
+		m.App.ErrorLog.Println(err)
+		m.AddErrorMsg(r, "Error getting data")
+		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+	}
 
 	// Get template data
 	td := models.TemplateData{
@@ -81,27 +83,29 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add forms for expenses
-	// for _, expense := range expenses {
-	// 	// Get form names
-	// 	edit := fmt.Sprintf("edit-%d", expense.ID)
-	// 	delete := fmt.Sprintf("delete-%d", expense.ID)
+	for _, expense := range expenses.Expenses {
+		// Get form names
+		edit := fmt.Sprintf("edit-%d", expense.ID)
+		delete := fmt.Sprintf("delete-%d", expense.ID)
 
-	// 	// Get expense tags as []string
-	// 	tags := make([]string, 0, len(expense.Tags))
-	// 	for _, tag := range expense.Tags {
-	// 		tags = append(tags, tag.Name)
-	// 	}
+		// Get expense tags as []string
+		tags := make([]string, 0, len(expense.Tags))
+		for _, tag := range expense.Tags {
+			tags = append(tags, tag.Name)
+		}
 
-	// 	// Add forms
-	// 	td.Form[edit] = forms.NewFromMap(map[string]string{
-	// 		"amount":        fmt.Sprintf("%0.2f", expense.Amount),
-	// 		"tags":          strings.Join(tags, ","),
-	// 		"date":          fmt.Sprintf("%d-%02d-%02dT%02d:%02d", expense.Date.Year(), expense.Date.Month(), expense.Date.Day(), expense.Date.Hour(), expense.Date.Minute()),
-	// 		"from_account":  fmt.Sprintf("%d", expense.FromAccount.ID),
-	// 		"from_category": fmt.Sprintf("%d", expense.FromCategory.ID),
-	// 	})
-	// 	td.Form[delete] = forms.New(nil)
-	// }
+		date := expense.Date.AsTime()
+
+		// Add forms
+		td.Form[edit] = forms.NewFromMap(map[string]string{
+			"amount":        fmt.Sprintf("%0.2f", expense.Amount),
+			"tags":          strings.Join(tags, ","),
+			"date":          fmt.Sprintf("%d-%02d-%02dT%02d:%02d", date.Year(), date.Month(), date.Day(), date.Hour(), date.Minute()),
+			"from_account":  fmt.Sprintf("%d", expense.FromAccount.ID),
+			"from_category": fmt.Sprintf("%d", expense.FromCategory.ID),
+		})
+		td.Form[delete] = forms.New(nil)
+	}
 
 	// Add default data
 	m.AddDefaultData(&td, r)
@@ -109,10 +113,10 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 	// Setup page data
 	data := expensesview.ExpensesData{
 		TemplateData: td,
-		// Expenses:     expenses,
-		// Tags:         tags,
-		Accounts: accounts.Accounts,
-		// Categories:   categories,
+		Expenses:     expenses.Expenses,
+		Tags:         tags.Tags,
+		Accounts:     accounts.Accounts,
+		Categories:   categories.Categories,
 	}
 
 	// Render view

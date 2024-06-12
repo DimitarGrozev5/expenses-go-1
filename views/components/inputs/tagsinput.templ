@@ -14,7 +14,7 @@ type TagsInputProps struct {
 	SingleTag bool
 }
 
-func joinTags(tags []models.Tag) string {
+func joinTags(tags []*models.GrpcTag) string {
 	strs := make([]string, 0, len(tags))
 	for _, tag := range tags {
 		strs = append(strs, tag.Name)
@@ -22,7 +22,7 @@ func joinTags(tags []models.Tag) string {
 	return strings.Join(strs, ",")
 }
 
-templ TagsInput(tags []models.Tag, props TagsInputProps) {
+templ TagsInput(tags []*models.GrpcTag, props TagsInputProps) {
 	<div class="tag-input flex flex-col items-stretch border border-primary-500 rounded-md p-2" data-tags={ joinTags(tags) } data-single-tag={ strconv.FormatBool(props.SingleTag) }>
 		<label for={ props.Name }>{ props.Label }</label>
 		<input

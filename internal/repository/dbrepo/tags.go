@@ -12,7 +12,7 @@ import (
 )
 
 // Get all tags ordered by most used
-func (m *sqliteDBRepo) GetTags() ([]models.Tag, error) {
+func (m *sqliteDBRepo) GetTags(empty *models.GrpcEmpty) (*models.GetTagsReturns, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -28,11 +28,11 @@ func (m *sqliteDBRepo) GetTags() ([]models.Tag, error) {
 	defer rows.Close()
 
 	// Define tags slice
-	tags := make([]models.Tag, 0)
+	tags := make([]*models.GrpcTag, 0)
 
 	// Scan rows
 	for rows.Next() {
-		var tag models.Tag
+		tag := &models.GrpcTag{}
 
 		err = rows.Scan(&tag.ID, &tag.Name, &tag.UsageCount)
 		if err != nil {
@@ -48,7 +48,7 @@ func (m *sqliteDBRepo) GetTags() ([]models.Tag, error) {
 		return nil, err
 	}
 
-	return tags, nil
+	return &models.GetTagsReturns{Tags: tags}, nil
 }
 
 // Update multiple tags

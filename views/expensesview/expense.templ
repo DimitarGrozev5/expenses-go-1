@@ -7,7 +7,7 @@ import "github.com/dimitargrozev5/expenses-go-1/internal/forms"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 
-func getAction(id int, method string) templ.SafeURL {
+func getAction(id int64, method string) templ.SafeURL {
 	return templ.URL(fmt.Sprintf("/expenses/%d/%s", id, method))
 }
 
@@ -15,7 +15,17 @@ func opened(form *forms.Form) bool {
 	return !form.Valid()
 }
 
-templ ExpenseCard(expense models.Expense, tags []models.Tag, accounts []*models.GrpcAccount, categories []models.Category, editForm *forms.Form, csrfToken string) {
+func printDate(expense *models.GrpcExpense) string {
+	date := expense.Date.AsTime()
+	return fmt.Sprintf("%02d.%02d.%d", date.Day(), date.Month(), date.Year())
+}
+
+func printTime(expense *models.GrpcExpense) string {
+	date := expense.Date.AsTime()
+	return fmt.Sprintf("%02d:%02d", date.Hour(), date.Minute())
+}
+
+templ ExpenseCard(expense *models.GrpcExpense, tags []*models.GrpcTag, accounts []*models.GrpcAccount, categories []*models.GrpcCategory, editForm *forms.Form, csrfToken string) {
 	@cards.Card() {
 		<div class="flex flex-row items-stretch gap-4 flex-wrap">
 			<div class="flex-1 flex flex-col items-center justify-center gap-0.5">
@@ -32,8 +42,8 @@ templ ExpenseCard(expense models.Expense, tags []models.Tag, accounts []*models.
 				</div>
 			</div>
 			<div class="flex flex-col items-end">
-				<div class="text-xs text-primary-400">{ fmt.Sprintf("%02d.%02d.%d", expense.Date.Day(), expense.Date.Month(), expense.Date.Year()) }</div>
-				<div class="text-xs text-primary-400">{ fmt.Sprintf("%02d:%02d", expense.Date.Hour(), expense.Date.Minute()) }</div>
+				<div class="text-xs text-primary-400">{ printDate(expense) }</div>
+				<div class="text-xs text-primary-400">{ printTime(expense) }</div>
 				<div class="flex-1 flex flex-row gap-3 justify-end items-end">
 					<button class="toggle-dialog"><span class="material-symbols-outlined text-base">edit</span></button>
 					@dialogs.Dialog(getAction(expense.ID, "edit"), opened(editForm), "Edit expense", "Edit") {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (m *sqliteDBRepo) GetCategoriesCount() (int, error) {
@@ -30,7 +31,7 @@ func (m *sqliteDBRepo) GetCategoriesCount() (int, error) {
 	return count, nil
 }
 
-func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
+func (m *sqliteDBRepo) GetCategories(params *models.GrpcEmpty) (*models.GetCategoriesReturns, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -60,12 +61,15 @@ func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
 	defer rows.Close()
 
 	// Set variable for categories
-	categories := make([]models.Category, 0)
+	categories := make([]*models.GrpcCategory, 0)
 
 	// Scan rows
 	for rows.Next() {
 		// Define base models
-		var category models.Category
+		category := &models.GrpcCategory{}
+		var lastInputDate time.Time
+		var createdAt time.Time
+		var updatedAt time.Time
 
 		// Store duration
 		var nextInputDate string
@@ -74,26 +78,30 @@ func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
 			&category.ID,
 			&category.Name,
 			&category.BudgetInput,
-			&category.LastInputDate,
+			&lastInputDate,
 			&nextInputDate,
 			&category.SpendingLimit,
 			&category.SpendingLeft,
 			&category.InitialAmount,
 			&category.CurrentAmount,
 			&category.TableOrder,
-			&category.CreatedAt,
-			&category.UpdatedAt,
+			&createdAt,
+			&updatedAt,
 		)
 		if err != nil {
 			return nil, err
 		}
 
 		// Parse duration
-		t, err := time.Parse("2006-01-02 15:04:05", nextInputDate)
-		if err != nil {
-			return nil, err
-		}
-		category.InputInterval = t.Sub(category.LastInputDate)
+		// t, err := time.Parse("2006-01-02 15:04:05", nextInputDate)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// category.InputInterval = t.Sub(category.LastInputDate)
+
+		category.LastInputDate = timestamppb.New(lastInputDate)
+		category.CreatedAt = timestamppb.New(createdAt)
+		category.UpdatedAt = timestamppb.New(updatedAt)
 
 		// Add to accounts
 		categories = append(categories, category)
@@ -103,7 +111,7 @@ func (m *sqliteDBRepo) GetCategories() ([]models.Category, error) {
 		return nil, err
 	}
 
-	return categories, nil
+	return &models.GetCategoriesReturns{Categories: categories}, nil
 }
 
 func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error) {

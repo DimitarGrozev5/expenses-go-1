@@ -11,10 +11,10 @@ type DatabaseRepo interface {
 	// ModifyFreeFunds(params *models.ModifyFreeFundsParams) (*models.GrpcEmpty, error)
 
 	// Tags methods
-	// GetTags(empty *models.GrpcEmpty) (*models.GetTagsReturns, error)
+	GetTags(empty *models.GrpcEmpty) (*models.GetTagsReturns, error)
 
 	// Expense methods
-	// GetExpenses(param *models.GrpcEmpty) (*models.GetExpensesReturns, error)
+	GetExpenses(param *models.GrpcEmpty) (*models.GetExpensesReturns, error)
 	// AddExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
 	// EditExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
 	// DeleteExpense(param *models.DeleteExpenseParams) (*models.GrpcEmpty, error)
@@ -29,7 +29,7 @@ type DatabaseRepo interface {
 
 	// Categories methods
 	// GetCategoriesCount(params *models.GrpcEmpty) (*models.GetCategoriesCountReturns, error)
-	// GetCategories(params *models.GrpcEmpty) (*models.GetCategoriesReturns, error)
+	GetCategories(params *models.GrpcEmpty) (*models.GetCategoriesReturns, error)
 	// GetCategoriesOverview(params *models.GrpcEmpty) (*models.GetCategoriesOverviewReturns, error)
 	// AddCategory(params *models.AddCategoryParams) (*models.GrpcEmpty, error)
 	// ReorderCategory(params *models.ReorderCategoryParams) (*models.GrpcEmpty, error)

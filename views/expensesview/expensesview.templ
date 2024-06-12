@@ -9,10 +9,10 @@ import "fmt"
 // Page data
 type ExpensesData struct {
 	models.TemplateData
-	Expenses   []models.Expense
-	Tags       []models.Tag
+	Expenses   []*models.GrpcExpense
+	Tags       []*models.GrpcTag
 	Accounts   []*models.GrpcAccount
-	Categories []models.Category
+	Categories []*models.GrpcCategory
 }
 
 templ (d ExpensesData) View() {

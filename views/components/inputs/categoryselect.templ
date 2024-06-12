@@ -11,7 +11,7 @@ type CategorySelectProps struct {
 	Error    string
 }
 
-templ CategorySelect(categories []models.Category, props CategorySelectProps) {
+templ CategorySelect(categories []*models.GrpcCategory, props CategorySelectProps) {
 	<div class="flex flex-col items-stretch">
 		<label for={ props.Name }>{ props.Label }</label>
 		<select

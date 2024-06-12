@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Get expenses ordered by date
-func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
+func (m *sqliteDBRepo) GetExpenses(param *models.GrpcEmpty) (*models.GetExpensesReturns, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -41,21 +42,22 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 	defer rows.Close()
 
 	// Define expensesMap map and slice
-	expensesMap := map[int]*models.Expense{}
-	expensesOrder := make([]int, 0)
+	expensesMap := map[int64]*models.GrpcExpense{}
+	expensesOrder := make([]int64, 0)
 
 	// Scan rows
 	for rows.Next() {
 		// Define base models
-		var expense models.Expense
-		var tag models.Tag
-		var account models.Account
-		var category models.Category
+		expense := models.GrpcExpense{}
+		tag := models.GrpcTag{}
+		account := models.GrpcAccount{}
+		category := models.GrpcCategory{}
+		var date time.Time
 
 		err = rows.Scan(
 			&expense.ID,
 			&expense.Amount,
-			&expense.Date,
+			&date,
 			&tag.ID,
 			&tag.Name,
 			&tag.UsageCount,
@@ -68,23 +70,25 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 			return nil, err
 		}
 
+		expense.Date = timestamppb.New(date)
+
 		// Get expense
 		oldExpense, ok := expensesMap[expense.ID]
 
 		// If expense hasn't been added
 		if !ok {
-			expense.Tags = []models.Tag{tag}
-			expense.FromAccount = account
-			expense.FromCategory = category
+			expense.Tags = []*models.GrpcTag{&tag}
+			expense.FromAccount = &account
+			expense.FromCategory = &category
 			expensesMap[expense.ID] = &expense
 			expensesOrder = append(expensesOrder, expense.ID)
 			continue
 		}
 
 		// If expense has been added
-		oldExpense.Tags = append(oldExpense.Tags, tag)
-		oldExpense.FromAccount = account
-		oldExpense.FromCategory = category
+		oldExpense.Tags = append(oldExpense.Tags, &tag)
+		oldExpense.FromAccount = &account
+		oldExpense.FromCategory = &category
 	}
 	err = rows.Err()
 	if err != nil {
@@ -92,12 +96,12 @@ func (m *sqliteDBRepo) GetExpenses() ([]models.Expense, error) {
 	}
 
 	// Get expenses slice
-	expenses := make([]models.Expense, 0, len(expensesOrder))
+	expenses := make([]*models.GrpcExpense, 0, len(expensesOrder))
 	for _, id := range expensesOrder {
-		expenses = append(expenses, *expensesMap[id])
+		expenses = append(expenses, expensesMap[id])
 	}
 
-	return expenses, nil
+	return &models.GetExpensesReturns{Expenses: expenses}, nil
 }
 
 // Add expense
