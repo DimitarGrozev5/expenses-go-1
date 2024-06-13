@@ -5,6 +5,8 @@ import "github.com/dimitargrozev5/expenses-go-1/views/layout"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/cards"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 import "fmt"
+import "github.com/dimitargrozev5/expenses-go-1/internal/forms"
+import "time"
 
 // Page data
 type ExpensesData struct {
@@ -13,6 +15,14 @@ type ExpensesData struct {
 	Tags       []*models.GrpcTag
 	Accounts   []*models.GrpcAccount
 	Categories []*models.GrpcCategory
+}
+
+func setDate(s string) string {
+	fmt.Println(s)
+	if len(s) > 0 {
+		return s
+	}
+	return forms.TimeToString(time.Now())
 }
 
 templ (d ExpensesData) View() {
@@ -33,7 +43,7 @@ templ (d ExpensesData) View() {
 					Name:     "date",
 					Type:     "datetime-local",
 					Required: true,
-					Value:    d.Form["add-expense"].Get("date"),
+					Value:    setDate(d.Form["add-expense"].Get("date")),
 					Error:    d.Form["add-expense"].Errors.Get("date"),
 				})
 				@inputs.TagsInput(d.Tags, inputs.TagsInputProps{
