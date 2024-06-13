@@ -15,9 +15,9 @@ type DatabaseRepo interface {
 
 	// Expense methods
 	GetExpenses(param *models.GrpcEmpty) (*models.GetExpensesReturns, error)
-	// AddExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
-	// EditExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
-	// DeleteExpense(param *models.DeleteExpenseParams) (*models.GrpcEmpty, error)
+	AddExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
+	EditExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error)
+	DeleteExpense(param *models.DeleteExpenseParams) (*models.GrpcEmpty, error)
 
 	// Account methods
 	GetAccounts(params *models.GetAccountsParams) (*models.GetAccountsReturns, error)

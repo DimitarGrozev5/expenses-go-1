@@ -108,3 +108,22 @@ func (f *Form) IsDate(field string, layout string) bool {
 	}
 	return true
 }
+
+func (f *Form) IsFormDate(field string) bool {
+	x := f.Get(field)
+	_, err := StringToTime(x)
+	if err != nil {
+		f.Errors.Add(field, "This field must be a datetime")
+		return false
+	}
+	return true
+}
+
+// Convert between string date and time.Time
+func StringToTime(s string) (time.Time, error) {
+	return time.Parse("2006-01-02T15:04", s)
+}
+
+func TimeToString(t time.Time) string {
+	return fmt.Sprintf("%d-%02d-%02dT%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute())
+}

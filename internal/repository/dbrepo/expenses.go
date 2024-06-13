@@ -105,7 +105,7 @@ func (m *sqliteDBRepo) GetExpenses(param *models.GrpcEmpty) (*models.GetExpenses
 }
 
 // Add expense
-func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
+func (m *sqliteDBRepo) AddExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -113,14 +113,14 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	// Update tags
-	exisitingTags, err := m.UpdateTags(tags, tx)
+	exisitingTags, err := m.UpdateTags(param.Tags, tx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Define query to insert expense
@@ -133,13 +133,13 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		expense.Amount,
-		expense.Date,
-		expense.FromAccountId,
-		expense.FromCategoryId,
+		param.Expense.Amount,
+		param.Expense.Date.AsTime(),
+		param.Expense.FromAccountId,
+		param.Expense.FromCategoryId,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Take last inserted expense
@@ -149,28 +149,28 @@ func (m *sqliteDBRepo) AddExpense(expense models.Expense, tags []string) error {
 	row := tx.QueryRowContext(ctx, query)
 
 	// Get new expense expenseId
-	var expenseId int
+	var expenseId int64
 
 	err = row.Scan(&expenseId)
 
 	// Check for error
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Add tag relations
-	err = m.AddExpenseTags(int(expenseId), exisitingTags, tx)
+	err = m.AddExpenseTags(expenseId, exisitingTags, tx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
 
-	return nil
+	return nil, nil
 }
 
 // Edit expense
-func (m *sqliteDBRepo) EditExpense(expense models.Expense, tags []string) error {
+func (m *sqliteDBRepo) EditExpense(param *models.ExpensesParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -178,7 +178,7 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense, tags []string) error 
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -189,16 +189,16 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense, tags []string) error 
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		expense.ID,
+		param.Expense.ID,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Update tags
-	allTags, err := m.UpdateTags(tags, tx)
+	allTags, err := m.UpdateTags(param.Tags, tx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Update expense
@@ -213,29 +213,29 @@ func (m *sqliteDBRepo) EditExpense(expense models.Expense, tags []string) error 
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		expense.Amount,
-		expense.Date,
-		expense.FromAccountId,
-		expense.FromCategoryId,
-		expense.ID,
+		param.Expense.Amount,
+		param.Expense.Date.AsTime(),
+		param.Expense.FromAccountId,
+		param.Expense.FromCategoryId,
+		param.Expense.ID,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Add relations
-	err = m.AddExpenseTags(expense.ID, allTags, tx)
+	err = m.AddExpenseTags(param.Expense.ID, allTags, tx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Commit to transaction and exit
 	tx.Commit()
-	return nil
+	return nil, nil
 }
 
 // Delete expense
-func (m *sqliteDBRepo) DeleteExpense(id int) error {
+func (m *sqliteDBRepo) DeleteExpense(param *models.DeleteExpenseParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -243,7 +243,7 @@ func (m *sqliteDBRepo) DeleteExpense(id int) error {
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -254,19 +254,19 @@ func (m *sqliteDBRepo) DeleteExpense(id int) error {
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		id,
+		param.ID,
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
-	return nil
+	return nil, nil
 }
 
 // Add relations based on tags
-func (m *sqliteDBRepo) AddExpenseTags(expenseId int, tags []models.Tag, etx *sql.Tx) error {
+func (m *sqliteDBRepo) AddExpenseTags(expenseId int64, tags []models.Tag, etx *sql.Tx) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
