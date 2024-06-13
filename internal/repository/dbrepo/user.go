@@ -7,6 +7,7 @@ import (
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Close connection
@@ -15,13 +16,15 @@ func (m *sqliteDBRepo) Close() error {
 }
 
 // Get user by id
-func (m *sqliteDBRepo) GetUser() (models.User, error) {
+func (m *sqliteDBRepo) GetUser(empty *models.GrpcEmpty) (*models.GrpcUser, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// Define empty model
-	var u models.User
+	u := &models.GrpcUser{}
+	var createdAt time.Time
+	var updatedAt time.Time
 
 	// Define query
 	query := `SELECT id, email, password, db_version, free_funds, created_at, updated_at
@@ -37,8 +40,8 @@ func (m *sqliteDBRepo) GetUser() (models.User, error) {
 		&u.Password,
 		&u.DBVersion,
 		&u.FreeFunds,
-		&u.CreatedAt,
-		&u.UpdatedAt,
+		&createdAt,
+		&updatedAt,
 	)
 
 	// Check for error
@@ -46,14 +49,17 @@ func (m *sqliteDBRepo) GetUser() (models.User, error) {
 		return u, err
 	}
 
+	u.CreatedAt = timestamppb.New(createdAt)
+	u.UpdatedAt = timestamppb.New(updatedAt)
+
 	// Return user
 	return u, nil
 }
 
 // Authenticate user
-func (m *sqliteDBRepo) Authenticate(testPassword string) (int, string, int, error) {
+func (m *sqliteDBRepo) Authenticate(testPassword string) (int64, string, int64, error) {
 	// Get user
-	u, err := m.GetUser()
+	u, err := m.GetUser(nil)
 	if err != nil {
 		return 0, "", 0, err
 	}
@@ -75,7 +81,7 @@ func (m *sqliteDBRepo) Authenticate(testPassword string) (int, string, int, erro
 }
 
 // Modify free funds
-func (m *sqliteDBRepo) ModifyFreeFunds(amount float64, toAccountId int, tagName string) error {
+func (m *sqliteDBRepo) ModifyFreeFunds(params *models.ModifyFreeFundsParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -83,14 +89,14 @@ func (m *sqliteDBRepo) ModifyFreeFunds(amount float64, toAccountId int, tagName 
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	// Update tags
-	tags, err := m.UpdateTags([]string{tagName}, tx)
+	tags, err := m.UpdateTags([]string{params.TagName}, tx)
 	if err != nil || len(tags) != 1 {
-		return err
+		return nil, err
 	}
 
 	// Define query to insert account
@@ -108,14 +114,14 @@ func (m *sqliteDBRepo) ModifyFreeFunds(amount float64, toAccountId int, tagName 
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		amount,
-		toAccountId,
+		params.Amount,
+		params.ToAccountId,
 		tags[0].ID,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
-	return nil
+	return nil, nil
 }

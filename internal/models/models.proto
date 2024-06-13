@@ -227,7 +227,7 @@ message GetCategoriesReturns {
 }
 
 message GetCategoriesOverviewReturns {
-    repeated GrpcCategory Categories = 1;
+    repeated GrpcCategoryOverview Categories = 1;
 }
 
 message GetTimePeriodsReturns {

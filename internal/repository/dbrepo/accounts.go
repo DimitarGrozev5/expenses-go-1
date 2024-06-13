@@ -70,7 +70,7 @@ func (m *sqliteDBRepo) GetAccounts(params *models.GetAccountsParams) (*models.Ge
 	return &models.GetAccountsReturns{Accounts: accounts}, nil
 }
 
-func (m *sqliteDBRepo) GetAccount(id int) (models.Account, error) {
+func (m *sqliteDBRepo) GetAccount(id int64) (*models.GrpcAccount, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -82,7 +82,9 @@ func (m *sqliteDBRepo) GetAccount(id int) (models.Account, error) {
 	row := m.DB.QueryRowContext(ctx, query, id)
 
 	// Set account
-	var account models.Account
+	account := &models.GrpcAccount{}
+	var createdAt time.Time
+	var updatedAt time.Time
 
 	// Scan row into model
 	err := row.Scan(
@@ -91,8 +93,8 @@ func (m *sqliteDBRepo) GetAccount(id int) (models.Account, error) {
 		&account.CurrentAmount,
 		&account.UsageCount,
 		&account.TableOrder,
-		&account.CreatedAt,
-		&account.UpdatedAt,
+		&createdAt,
+		&updatedAt,
 	)
 
 	// Check for error
@@ -100,10 +102,13 @@ func (m *sqliteDBRepo) GetAccount(id int) (models.Account, error) {
 		return account, err
 	}
 
+	account.CreatedAt = timestamppb.New(createdAt)
+	account.UpdatedAt = timestamppb.New(updatedAt)
+
 	return account, nil
 }
 
-func (m *sqliteDBRepo) AddAccount(name string) error {
+func (m *sqliteDBRepo) AddAccount(params *models.AddAccountParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -111,7 +116,7 @@ func (m *sqliteDBRepo) AddAccount(name string) error {
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -122,17 +127,17 @@ func (m *sqliteDBRepo) AddAccount(name string) error {
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		name,
+		params.Name,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
-	return nil
+	return nil, nil
 }
 
-func (m *sqliteDBRepo) EditAccountName(id int, name string) error {
+func (m *sqliteDBRepo) EditAccountName(params *models.EditAccountNameParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -140,7 +145,7 @@ func (m *sqliteDBRepo) EditAccountName(id int, name string) error {
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -151,18 +156,18 @@ func (m *sqliteDBRepo) EditAccountName(id int, name string) error {
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		name,
-		id,
+		params.Name,
+		params.ID,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
-	return nil
+	return nil, nil
 }
 
-func (m *sqliteDBRepo) DeleteAccount(id int) error {
+func (m *sqliteDBRepo) DeleteAccount(params *models.DeleteAccountParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -170,39 +175,39 @@ func (m *sqliteDBRepo) DeleteAccount(id int) error {
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	// Get account
-	account, err := m.GetAccount(id)
+	account, err := m.GetAccount(params.ID)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	// If account is connected to expenses, don't delete it
+	if account.UsageCount > 0 {
+		return nil, nil
 	}
 
 	// Setup query to delete account
 	stmt := `DELETE FROM accounts WHERE id=$1`
 
-	// If account is connected to expenses, don't delete it
-	if account.UsageCount > 0 {
-		return nil
-	}
-
 	// Execute query
-	_, err = tx.ExecContext(ctx, stmt, id)
+	_, err = tx.ExecContext(ctx, stmt, params.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
-	return nil
+	return nil, nil
 }
 
-func (m *sqliteDBRepo) TransferFunds(fromAccount, toAccount models.Account, amount float64) error {
-	return nil
+func (m *sqliteDBRepo) TransferFunds(params *models.TransferFundsParams) (*models.GrpcEmpty, error) {
+	return nil, nil
 }
 
-func (m *sqliteDBRepo) ReorderAccount(currentAccount models.Account, direction int) error {
+func (m *sqliteDBRepo) ReorderAccount(params *models.ReorderAccountParams) (*models.GrpcEmpty, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -210,7 +215,7 @@ func (m *sqliteDBRepo) ReorderAccount(currentAccount models.Account, direction i
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
@@ -221,16 +226,16 @@ func (m *sqliteDBRepo) ReorderAccount(currentAccount models.Account, direction i
 	_, err = tx.ExecContext(
 		ctx,
 		stmt,
-		currentAccount.TableOrder+direction,
-		currentAccount.ID,
+		params.Account.TableOrder+params.Direction,
+		params.Account.ID,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
 
-	return nil
+	return nil, nil
 }
 
 // func (m *sqliteDBRepo) GetAccounts(orderByPopularity bool) ([]models.Account, error) {

@@ -114,7 +114,7 @@ func (m *sqliteDBRepo) GetCategories(params *models.GrpcEmpty) (*models.GetCateg
 	return &models.GetCategoriesReturns{Categories: categories}, nil
 }
 
-func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error) {
+func (m *sqliteDBRepo) GetCategoriesOverview(params *models.GrpcEmpty) (*models.GetCategoriesOverviewReturns, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -146,12 +146,13 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 	defer rows.Close()
 
 	// Set variable for categories
-	categories := make([]models.CategoryOverview, 0)
+	categories := make([]*models.GrpcCategoryOverview, 0)
 
 	// Scan rows
 	for rows.Next() {
 		// Define base models
-		var category models.CategoryOverview
+		category := &models.GrpcCategoryOverview{}
+		var periodStart time.Time
 		var periodEnd string
 
 		err = rows.Scan(
@@ -163,7 +164,7 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 			&category.InputPeriodCaption,
 			&category.SpendingLimit,
 			&category.SpendingLeft,
-			&category.PeriodStart,
+			&periodStart,
 			&periodEnd,
 			&category.InitialAmount,
 			&category.CurrentAmount,
@@ -178,7 +179,8 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 		if err != nil {
 			return nil, err
 		}
-		category.PeriodEnd = t
+		category.PeriodStart = timestamppb.New(periodStart)
+		category.PeriodEnd = timestamppb.New(t)
 
 		// Add to accounts
 		categories = append(categories, category)
@@ -188,10 +190,110 @@ func (m *sqliteDBRepo) GetCategoriesOverview() ([]models.CategoryOverview, error
 		return nil, err
 	}
 
-	return categories, nil
+	return &models.GetCategoriesOverviewReturns{Categories: categories}, nil
 }
 
-func (m *sqliteDBRepo) ResetCategory(amount float64, categoryId int, budgetInput float64, inputInterval int, inputPeriod int, spendingLimit float64, etx *sql.Tx) error {
+func (m *sqliteDBRepo) AddCategory(params *models.AddCategoryParams) (*models.GrpcEmpty, error) {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Define query to insert account
+	stmt := `INSERT INTO procedure_new_category (
+		name,
+		budget_input,
+		input_interval,
+		input_period,
+		spending_limit
+	) VALUES (
+		$1,
+		$2,
+		$3,
+		$4,
+		$5
+	)`
+
+	// Execute query
+	_, err = tx.ExecContext(
+		ctx,
+		stmt,
+		params.Name,
+		params.BudgetInput,
+		params.InputInterval,
+		params.InputPeriod,
+		params.SpendingLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.Commit()
+	return nil, nil
+}
+
+func (m *sqliteDBRepo) DeleteCategory(params *models.DeleteCategoryParams) (*models.GrpcEmpty, error) {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Setup query to delete account
+	stmt := `DELETE FROM procedure_remove_category WHERE id=$1`
+
+	// Execute query
+	_, err = tx.ExecContext(ctx, stmt, params.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.Commit()
+	return nil, nil
+}
+
+func (m *sqliteDBRepo) ReorderCategory(params *models.ReorderCategoryParams) (*models.GrpcEmpty, error) {
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Setup query
+	stmt := `UPDATE procedure_change_categories_order SET table_order = $1 WHERE id = $2`
+
+	// Execute query
+	_, err = tx.ExecContext(
+		ctx,
+		stmt,
+		params.NewOrder,
+		params.CategoryId,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.Commit()
+	return nil, nil
+}
+
+func (m *sqliteDBRepo) ResetCategory(amount float64, categoryId int64, budgetInput float64, inputInterval int64, inputPeriod int64, spendingLimit float64, etx *sql.Tx) error {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -248,122 +350,22 @@ func (m *sqliteDBRepo) ResetCategory(amount float64, categoryId int, budgetInput
 	return nil
 }
 
-func (m *sqliteDBRepo) ResetCategories(categories []models.ResetCategoryData) error {
+func (m *sqliteDBRepo) ResetCategories(params *models.ResetCategoriesParams) (*models.GrpcEmpty, error) {
 
 	// Start transaction
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
-	for _, categoryData := range categories {
+	for _, categoryData := range params.Catgories {
 		err = m.ResetCategory(categoryData.Amount, categoryData.CategoryId, categoryData.BudgetInput, categoryData.InputInterval, categoryData.InputPeriod, categoryData.SpendingLimit, tx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	tx.Commit()
-	return nil
-}
-
-func (m *sqliteDBRepo) AddCategory(name string, budgetInput float64, spendingLimit float64, inputInterval int, inputPeriod int) error {
-	// Define context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Start transaction
-	tx, err := m.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Define query to insert account
-	stmt := `INSERT INTO procedure_new_category (
-		name,
-		budget_input,
-		input_interval,
-		input_period,
-		spending_limit
-	) VALUES (
-		$1,
-		$2,
-		$3,
-		$4,
-		$5
-	)`
-
-	// Execute query
-	_, err = tx.ExecContext(
-		ctx,
-		stmt,
-		name,
-		budgetInput,
-		inputInterval,
-		inputPeriod,
-		spendingLimit,
-	)
-	if err != nil {
-		return err
-	}
-
-	tx.Commit()
-	return nil
-}
-
-func (m *sqliteDBRepo) DeleteCategory(id int) error {
-	// Define context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Start transaction
-	tx, err := m.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Setup query to delete account
-	stmt := `DELETE FROM procedure_remove_category WHERE id=$1`
-
-	// Execute query
-	_, err = tx.ExecContext(ctx, stmt, id)
-	if err != nil {
-		return err
-	}
-
-	tx.Commit()
-	return nil
-}
-
-func (m *sqliteDBRepo) ReorderCategory(categoryid int, new_order int) error {
-	// Define context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Start transaction
-	tx, err := m.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Setup query
-	stmt := `UPDATE procedure_change_categories_order SET table_order = $1 WHERE id = $2`
-
-	// Execute query
-	_, err = tx.ExecContext(
-		ctx,
-		stmt,
-		new_order,
-		categoryid,
-	)
-	if err != nil {
-		return err
-	}
-
-	tx.Commit()
-	return nil
+	return nil, nil
 }

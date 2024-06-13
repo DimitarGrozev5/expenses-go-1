@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Get all tags ordered by most used
-func (m *sqliteDBRepo) GetTimePeriods() ([]models.TimePeriod, error) {
+func (m *sqliteDBRepo) GetTimePeriods(empty *models.GrpcEmpty) (*models.GetTimePeriodsReturns, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -25,22 +26,27 @@ func (m *sqliteDBRepo) GetTimePeriods() ([]models.TimePeriod, error) {
 	defer rows.Close()
 
 	// Define periods slice
-	periods := make([]models.TimePeriod, 0)
+	periods := make([]*models.GrpcTimePeriod, 0)
+	var createdAt time.Time
+	var updatedAt time.Time
 
 	// Scan rows
 	for rows.Next() {
-		var period models.TimePeriod
+		period := &models.GrpcTimePeriod{}
 
 		err = rows.Scan(
 			&period.ID,
 			&period.Period,
 			&period.Caption,
-			&period.CreatedAt,
-			&period.UpdatedAt,
+			&createdAt,
+			&updatedAt,
 		)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		period.CreatedAt = timestamppb.New(createdAt)
+		period.UpdatedAt = timestamppb.New(updatedAt)
 
 		// Add to slice
 		periods = append(periods, period)
@@ -51,5 +57,5 @@ func (m *sqliteDBRepo) GetTimePeriods() ([]models.TimePeriod, error) {
 		return nil, err
 	}
 
-	return periods, nil
+	return &models.GetTimePeriodsReturns{TimePeriods: periods}, nil
 }
