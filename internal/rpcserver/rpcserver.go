@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/config"
+	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
 )
@@ -32,6 +33,20 @@ func NewDatabaseServer(r *DatabaseServer) {
 
 // Get user connection
 func (m *DatabaseServer) GetDB(ctx context.Context) (repository.DatabaseRepo, bool) {
+	// Get user key
+	userKey, ok := ctx.Value("userKey").(string)
+	if !ok {
+		return nil, false
+	}
+
+	// Get db connection
+	db, ok := m.App.DBRepos[userKey]
+
+	return db, ok
+}
+
+// Get user connection
+func (m *DatabaseServer) GetDBConn(ctx context.Context) (*driver.DB, bool) {
 	// Get user key
 	userKey, ok := ctx.Value("userKey").(string)
 	if !ok {

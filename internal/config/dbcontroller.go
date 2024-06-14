@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 
+	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
 )
 
@@ -13,5 +14,6 @@ type DBControllerConfig struct {
 	JWTSecretKey  []byte //*ecdsa.PrivateKey
 	InfoLog       *log.Logger
 	ErrorLog      *log.Logger
-	DBConnections map[string]repository.DatabaseRepo
+	DBConnections map[string]*driver.DB
+	DBRepos       map[string]repository.DatabaseRepo
 }

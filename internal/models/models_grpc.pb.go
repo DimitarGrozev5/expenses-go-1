@@ -27,6 +27,7 @@ type DatabaseClient interface {
 	// User
 	GetUser(ctx context.Context, in *GrpcEmpty, opts ...grpc.CallOption) (*GrpcUser, error)
 	Authenticate(ctx context.Context, in *LoginCredentials, opts ...grpc.CallOption) (*LoginToken, error)
+	Logout(ctx context.Context, in *LogoutParams, opts ...grpc.CallOption) (*GrpcEmpty, error)
 	ModifyFreeFunds(ctx context.Context, in *ModifyFreeFundsParams, opts ...grpc.CallOption) (*GrpcEmpty, error)
 	// Tags methods
 	GetTags(ctx context.Context, in *GrpcEmpty, opts ...grpc.CallOption) (*GetTagsReturns, error)
@@ -83,6 +84,15 @@ func (c *databaseClient) GetUser(ctx context.Context, in *GrpcEmpty, opts ...grp
 func (c *databaseClient) Authenticate(ctx context.Context, in *LoginCredentials, opts ...grpc.CallOption) (*LoginToken, error) {
 	out := new(LoginToken)
 	err := c.cc.Invoke(ctx, "/Database/Authenticate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *databaseClient) Logout(ctx context.Context, in *LogoutParams, opts ...grpc.CallOption) (*GrpcEmpty, error) {
+	out := new(GrpcEmpty)
+	err := c.cc.Invoke(ctx, "/Database/Logout", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -278,6 +288,7 @@ type DatabaseServer interface {
 	// User
 	GetUser(context.Context, *GrpcEmpty) (*GrpcUser, error)
 	Authenticate(context.Context, *LoginCredentials) (*LoginToken, error)
+	Logout(context.Context, *LogoutParams) (*GrpcEmpty, error)
 	ModifyFreeFunds(context.Context, *ModifyFreeFundsParams) (*GrpcEmpty, error)
 	// Tags methods
 	GetTags(context.Context, *GrpcEmpty) (*GetTagsReturns, error)
@@ -318,6 +329,9 @@ func (UnimplementedDatabaseServer) GetUser(context.Context, *GrpcEmpty) (*GrpcUs
 }
 func (UnimplementedDatabaseServer) Authenticate(context.Context, *LoginCredentials) (*LoginToken, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Authenticate not implemented")
+}
+func (UnimplementedDatabaseServer) Logout(context.Context, *LogoutParams) (*GrpcEmpty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Logout not implemented")
 }
 func (UnimplementedDatabaseServer) ModifyFreeFunds(context.Context, *ModifyFreeFundsParams) (*GrpcEmpty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ModifyFreeFunds not implemented")
@@ -442,6 +456,24 @@ func _Database_Authenticate_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DatabaseServer).Authenticate(ctx, req.(*LoginCredentials))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Database_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Database/Logout",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServer).Logout(ctx, req.(*LogoutParams))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -824,6 +856,10 @@ var Database_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Authenticate",
 			Handler:    _Database_Authenticate_Handler,
+		},
+		{
+			MethodName: "Logout",
+			Handler:    _Database_Logout_Handler,
 		},
 		{
 			MethodName: "ModifyFreeFunds",

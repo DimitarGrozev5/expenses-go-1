@@ -20,6 +20,8 @@ message LoginCredentials {
 message LoginToken {
     string token = 1;
 }
+message LogoutParams {
+}
 
 // User
 message GrpcUser {
@@ -241,6 +243,7 @@ service Database {
     // User
     rpc GetUser(GrpcEmpty) returns (GrpcUser);
     rpc Authenticate(LoginCredentials) returns (LoginToken);
+    rpc Logout(LogoutParams) returns (GrpcEmpty);
     rpc ModifyFreeFunds(ModifyFreeFundsParams) returns (GrpcEmpty);
 
     // Tags methods

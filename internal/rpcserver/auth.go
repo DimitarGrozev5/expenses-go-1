@@ -61,7 +61,8 @@ func (m *DatabaseServer) Authenticate(ctx context.Context, lc *models.LoginCrede
 	key := dbrepo.GetUserKey(lc.Email)
 
 	// Add connection to repo
-	m.App.DBConnections[key] = repo
+	m.App.DBConnections[key] = dbconn
+	m.App.DBRepos[key] = repo
 
 	// Crate JWT to authenticate user
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, //jwt.SigningMethodES256,
@@ -79,4 +80,22 @@ func (m *DatabaseServer) Authenticate(ctx context.Context, lc *models.LoginCrede
 	loginResponse.Token = jwt
 
 	return &loginResponse, nil
+}
+
+// Handle posting to login
+func (m *DatabaseServer) Logout(ctx context.Context, params *models.LogoutParams) (*models.GrpcEmpty, error) {
+
+	// Get db
+	dbconn, ok := m.GetDBConn(ctx)
+	if !ok {
+		return nil, fmt.Errorf("can't find user db connection")
+	}
+
+	// Close connection
+	err := dbconn.SQL.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
