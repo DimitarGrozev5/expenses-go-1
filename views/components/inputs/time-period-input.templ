@@ -10,7 +10,7 @@ type TimePeriodInputProps struct {
 	Required       bool
 	Interval       string
 	SelectedPeriod string
-	Periods        []models.TimePeriod
+	Periods        []*models.GrpcTimePeriod
 	ErrorInterval  string
 	ErrorPeriod    string
 }

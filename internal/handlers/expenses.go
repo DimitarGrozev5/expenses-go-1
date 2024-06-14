@@ -159,14 +159,6 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 	// Split tags field
 	tags := re.Split(form.Get("tags"), -1)
 
-	// // Get db repo
-	// repo, ok := m.GetDB(r)
-	// if !ok {
-	// 	m.App.ErrorLog.Println("Cannot get DB repo")
-	// 	m.AddErrorMsg(r, "Please login to view expenses")
-	// 	http.Redirect(w, r, "/logout", http.StatusSeeOther)
-	// }
-
 	expense := &models.GrpcExpense{
 		Amount:         amount,
 		Date:           timestamppb.New(date),

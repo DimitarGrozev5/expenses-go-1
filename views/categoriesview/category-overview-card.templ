@@ -7,8 +7,9 @@ import "github.com/dimitargrozev5/expenses-go-1/views/components/buttons"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 import "github.com/dimitargrozev5/expenses-go-1/views/components/dialogs"
 import "time"
+import "google.golang.org/protobuf/types/known/timestamppb"
 
-templ CategoryOverviewCard(category models.CategoryOverview, first, last bool, csrfToken string) {
+templ CategoryOverviewCard(category *models.GrpcCategoryOverview, first, last bool, csrfToken string) {
 	@cards.Card() {
 		<div class="flex flex-row items-center gap-4">
 			<div class="flex flex-col items-center justify-center self-stretch gap-1 -ml-2 -my-2">
@@ -46,9 +47,9 @@ templ CategoryOverviewCard(category models.CategoryOverview, first, last bool, c
 		</div>
 		if !category.CanBeDeleted {
 			<div class="mt-3 px-2 flex flex-row justify-between items-center text-xs text-primary-400">
-				<div>{ fmt.Sprintf("From %02d.%02d.%d", category.PeriodStart.Day(), category.PeriodStart.Month(), category.PeriodStart.Year()) }</div>
+				<div>{ getFrom(category.PeriodStart) }</div>
 				<div>{ getDaysLeft(category.PeriodEnd) }</div>
-				<div>{ fmt.Sprintf("To %02d.%02d.%d", category.PeriodEnd.Day(), category.PeriodEnd.Month(), category.PeriodEnd.Year()) }</div>
+				<div>{ getTo(category.PeriodEnd) }</div>
 			</div>
 			if category.SpendingLeft > 0 {
 				@spendingLeft(category)
@@ -59,13 +60,23 @@ templ CategoryOverviewCard(category models.CategoryOverview, first, last bool, c
 	}
 }
 
-func getDaysLeft(end time.Time) string {
+func getFrom(p *timestamppb.Timestamp) string {
+	t := p.AsTime()
+	return fmt.Sprintf("From %02d.%02d.%d", t.Day(), t.Month(), t.Year())
+}
+
+func getTo(p *timestamppb.Timestamp) string {
+	t := p.AsTime()
+	return fmt.Sprintf("To %02d.%02d.%d", t.Day(), t.Month(), t.Year())
+}
+
+func getDaysLeft(end *timestamppb.Timestamp) string {
 	now := time.Now()
-	diff := end.Sub(now)
+	diff := end.AsTime().Sub(now)
 	return fmt.Sprintf("%0.0f Days Left", diff.Hours()/24)
 }
 
-templ spendingLeft(category models.CategoryOverview) {
+templ spendingLeft(category *models.GrpcCategoryOverview) {
 	<div class="flex flex-row items-stretch text-xs">
 		<div
 			class="flex flex-row items-center justify-center min-w-fit px-2 py-1 rounded-l-full bg-yellow-300 text-yellow-700"
@@ -78,7 +89,7 @@ templ spendingLeft(category models.CategoryOverview) {
 	</div>
 }
 
-templ spendingOver(category models.CategoryOverview) {
+templ spendingOver(category *models.GrpcCategoryOverview) {
 	<div class="flex flex-row items-stretch text-xs">
 		<div
 			class="flex flex-row items-center justify-center min-w-fit px-2 py-1 rounded-l-full bg-yellow-300 text-yellow-700"

@@ -8,8 +8,8 @@ import "github.com/dimitargrozev5/expenses-go-1/views/components/inputs"
 // Page data
 type CategoriesData struct {
 	models.TemplateData
-	Categories  []models.CategoryOverview
-	TimePeriods []models.TimePeriod
+	Categories  []*models.GrpcCategoryOverview
+	TimePeriods []*models.GrpcTimePeriod
 	FreeFunds   float64
 }
 

@@ -11,7 +11,7 @@ func resetCategoriesDialogOpened(form map[string]*forms.Form) bool {
 	return len(form["reset-categories"].Get("used-categories")) > 0
 }
 
-func getTimePeriods(periods []models.TimePeriod) string {
+func getTimePeriods(periods []*models.GrpcTimePeriod) string {
 	ps := make([]string, 0, len(periods))
 
 	for _, period := range periods {
