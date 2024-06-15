@@ -82,7 +82,7 @@ func (m *sqliteDBRepo) GetAccount(id int64, tx *sql.Tx) (*models.GrpcAccount, er
 	query := `SELECT id, name, current_amount, usage_count, table_order, created_at, updated_at FROM accounts WHERE id=$1`
 
 	// Get row
-	row := m.DB.QueryRowContext(ctx, query, id)
+	row := tx.QueryRowContext(ctx, query, id)
 
 	// Set account
 	account := &models.GrpcAccount{}
