@@ -71,6 +71,10 @@ The project is a golang server that keeps the sqlite databases localy and doesn'
 
 For Stage 2 the project is split in to two parts. First we have the main server that renders content for the users. Secondly we have a DB controller that contains all of the logic for connecting to and communicating with the DB. This seems like an unnecessary transition but it's a neccessary step if I want to make a horizontally scalable sqlite database. It also decouples the user facing part from the buisness logic and I may end up converting that to NextJS. The communication between the different services will hapen with gRPC because it's a fun paradigm that is new to me and also because it's a genuinly good way to structure the communication between two servers.
 
+### Stage 3
+
+For Stage 3 a DB Node server is created, that will host individual SQLite files with the goal to make the system horizontally scalable. When the available server resources are spent, a new DB Node can be started. It will copy a part of the DBs and will handle interacting with them. At this stage the DB Controller will become a router that passes the incoming rpc requests to the apropriate DB Node and tracks Node usage so it can recomend a scale up or down. For this reason dedicated DB is needed, to store all of the user files and the Nodes.
+
 ## Project elements
 
 ### Stage 1
