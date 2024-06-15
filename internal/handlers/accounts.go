@@ -20,6 +20,7 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting accounts")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Get tags
@@ -28,6 +29,7 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting accounts")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Get user
@@ -36,6 +38,7 @@ func (m *Repository) Accounts(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting accounts")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Get template data
@@ -101,7 +104,6 @@ func (m *Repository) PostNewAccount(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to expenses
 		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
-
 		return
 	}
 
@@ -145,7 +147,6 @@ func (m *Repository) PostModifyFreeFunds(w http.ResponseWriter, r *http.Request)
 
 		// Redirect to expenses
 		http.Redirect(w, r, "/accounts", http.StatusSeeOther)
-
 		return
 	}
 
@@ -208,7 +209,6 @@ func (m *Repository) PostMoveAccount(direction int) func(w http.ResponseWriter, 
 
 			// Redirect to expenses
 			http.Redirect(w, r, "/accounts", http.StatusSeeOther)
-
 			return
 		}
 

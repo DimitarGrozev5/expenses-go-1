@@ -42,7 +42,7 @@ func (m *sqliteDBRepo) GetAccounts(params *models.GetAccountsParams) (*models.Ge
 
 		// Get time
 		var createdAt time.Time
-		var updatedAt time.Time
+		var updatedAt sql.NullTime
 
 		err = rows.Scan(
 			&account.ID,
@@ -58,7 +58,9 @@ func (m *sqliteDBRepo) GetAccounts(params *models.GetAccountsParams) (*models.Ge
 		}
 
 		account.CreatedAt = timestamppb.New(createdAt)
-		account.UpdatedAt = timestamppb.New(updatedAt)
+		if updatedAt.Valid {
+			account.UpdatedAt = timestamppb.New(updatedAt.Time)
+		}
 
 		// Add to accounts
 		accounts = append(accounts, account)
@@ -71,7 +73,7 @@ func (m *sqliteDBRepo) GetAccounts(params *models.GetAccountsParams) (*models.Ge
 	return &models.GetAccountsReturns{Accounts: accounts}, nil
 }
 
-func (m *sqliteDBRepo) GetAccount(id int64) (*models.GrpcAccount, error) {
+func (m *sqliteDBRepo) GetAccount(id int64, tx *sql.Tx) (*models.GrpcAccount, error) {
 	// Define context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -183,7 +185,7 @@ func (m *sqliteDBRepo) DeleteAccount(params *models.DeleteAccountParams) (*model
 	defer tx.Rollback()
 
 	// Get account
-	account, err := m.GetAccount(params.ID)
+	account, err := m.GetAccount(params.ID, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +196,7 @@ func (m *sqliteDBRepo) DeleteAccount(params *models.DeleteAccountParams) (*model
 	}
 
 	// Setup query to delete account
-	stmt := `DELETE FROM accounts WHERE id=$1`
+	stmt := `DELETE FROM procedure_remove_account WHERE id=$1`
 
 	// Execute query
 	_, err = tx.ExecContext(ctx, stmt, params.ID)

@@ -14,6 +14,7 @@ func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
 	// Check if authenticated and redirect to expenses page
 	if helpers.IsAuthenticated(r) {
 		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
+		return
 	}
 
 	// Get template data

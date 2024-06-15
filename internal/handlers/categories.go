@@ -21,6 +21,7 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting categories")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Get time periods
@@ -29,6 +30,7 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting categories")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Get user data
@@ -37,6 +39,7 @@ func (m *Repository) Categories(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting categories")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Set default unused categories
@@ -122,7 +125,6 @@ func (m *Repository) PostNewCategory(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to categories
 		http.Redirect(w, r, "/categories", http.StatusSeeOther)
-
 		return
 	}
 
@@ -193,7 +195,6 @@ func (m *Repository) PostMoveCategory(direction int) func(w http.ResponseWriter,
 
 			// Redirect to expenses
 			http.Redirect(w, r, "/categories", http.StatusSeeOther)
-
 			return
 		}
 
@@ -273,7 +274,6 @@ func (m *Repository) PostResetCategories(w http.ResponseWriter, r *http.Request)
 
 		// Redirect to categories
 		http.Redirect(w, r, "/categories", http.StatusSeeOther)
-
 		return
 	}
 
@@ -298,7 +298,6 @@ func (m *Repository) PostResetCategories(w http.ResponseWriter, r *http.Request)
 
 			// Redirect to categories
 			http.Redirect(w, r, "/categories", http.StatusSeeOther)
-
 			return
 		}
 

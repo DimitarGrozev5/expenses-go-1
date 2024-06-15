@@ -32,7 +32,6 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to home
 		http.Redirect(w, r, "/", http.StatusSeeOther)
-
 		return
 	}
 
@@ -60,7 +59,6 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to home
 		http.Redirect(w, r, "/", http.StatusSeeOther)
-
 		return
 	}
 

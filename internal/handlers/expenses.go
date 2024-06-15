@@ -55,6 +55,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting expenses")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Get all tags
@@ -63,6 +64,7 @@ func (m *Repository) Expenses(w http.ResponseWriter, r *http.Request) {
 		m.App.ErrorLog.Println(err)
 		m.AddErrorMsg(r, "Error getting data")
 		http.Redirect(w, r, "/logout", http.StatusSeeOther)
+		return
 	}
 
 	// Get template data
@@ -143,7 +145,6 @@ func (m *Repository) PostNewExpense(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to expenses
 		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
-
 		return
 	}
 
@@ -214,7 +215,6 @@ func (m *Repository) PostEditExpense(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to expenses
 		http.Redirect(w, r, "/expenses", http.StatusSeeOther)
-
 		return
 	}
 
