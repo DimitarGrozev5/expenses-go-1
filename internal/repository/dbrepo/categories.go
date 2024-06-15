@@ -69,7 +69,7 @@ func (m *sqliteDBRepo) GetCategories(params *models.GrpcEmpty) (*models.GetCateg
 		category := &models.GrpcCategory{}
 		var lastInputDate time.Time
 		var createdAt time.Time
-		var updatedAt time.Time
+		var updatedAt sql.NullTime
 
 		// Store duration
 		var nextInputDate string
@@ -101,7 +101,9 @@ func (m *sqliteDBRepo) GetCategories(params *models.GrpcEmpty) (*models.GetCateg
 
 		category.LastInputDate = timestamppb.New(lastInputDate)
 		category.CreatedAt = timestamppb.New(createdAt)
-		category.UpdatedAt = timestamppb.New(updatedAt)
+		if updatedAt.Valid {
+			category.UpdatedAt = timestamppb.New(updatedAt.Time)
+		}
 
 		// Add to accounts
 		categories = append(categories, category)

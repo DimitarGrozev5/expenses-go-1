@@ -2,6 +2,7 @@ package dbrepo
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"time"
 
@@ -28,7 +29,7 @@ func (m *sqliteDBRepo) GetTimePeriods(empty *models.GrpcEmpty) (*models.GetTimeP
 	// Define periods slice
 	periods := make([]*models.GrpcTimePeriod, 0)
 	var createdAt time.Time
-	var updatedAt time.Time
+	var updatedAt sql.NullTime
 
 	// Scan rows
 	for rows.Next() {
@@ -46,7 +47,9 @@ func (m *sqliteDBRepo) GetTimePeriods(empty *models.GrpcEmpty) (*models.GetTimeP
 		}
 
 		period.CreatedAt = timestamppb.New(createdAt)
-		period.UpdatedAt = timestamppb.New(updatedAt)
+		if updatedAt.Valid {
+			period.UpdatedAt = timestamppb.New(updatedAt.Time)
+		}
 
 		// Add to slice
 		periods = append(periods, period)

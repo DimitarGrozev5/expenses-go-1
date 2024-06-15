@@ -2,6 +2,7 @@ package dbrepo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -24,7 +25,7 @@ func (m *sqliteDBRepo) GetUser(empty *models.GrpcEmpty) (*models.GrpcUser, error
 	// Define empty model
 	u := &models.GrpcUser{}
 	var createdAt time.Time
-	var updatedAt time.Time
+	var updatedAt sql.NullTime
 
 	// Define query
 	query := `SELECT id, email, password, db_version, free_funds, created_at, updated_at
@@ -50,7 +51,9 @@ func (m *sqliteDBRepo) GetUser(empty *models.GrpcEmpty) (*models.GrpcUser, error
 	}
 
 	u.CreatedAt = timestamppb.New(createdAt)
-	u.UpdatedAt = timestamppb.New(updatedAt)
+	if updatedAt.Valid {
+		u.UpdatedAt = timestamppb.New(updatedAt.Time)
+	}
 
 	// Return user
 	return u, nil

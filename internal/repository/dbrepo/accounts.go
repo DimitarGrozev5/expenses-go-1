@@ -2,6 +2,7 @@ package dbrepo
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -84,7 +85,7 @@ func (m *sqliteDBRepo) GetAccount(id int64) (*models.GrpcAccount, error) {
 	// Set account
 	account := &models.GrpcAccount{}
 	var createdAt time.Time
-	var updatedAt time.Time
+	var updatedAt sql.NullTime
 
 	// Scan row into model
 	err := row.Scan(
@@ -103,7 +104,9 @@ func (m *sqliteDBRepo) GetAccount(id int64) (*models.GrpcAccount, error) {
 	}
 
 	account.CreatedAt = timestamppb.New(createdAt)
-	account.UpdatedAt = timestamppb.New(updatedAt)
+	if updatedAt.Valid {
+		account.UpdatedAt = timestamppb.New(updatedAt.Time)
+	}
 
 	return account, nil
 }
