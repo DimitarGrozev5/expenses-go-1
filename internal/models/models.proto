@@ -236,9 +236,22 @@ message GetTimePeriodsReturns {
     repeated GrpcTimePeriod TimePeriods = 1;
 }
 
+message DBNodeData {
+	string address = 1;
+	double totalMemory = 2;
+	double freeMemory = 3;
+	double totalStorage = 4;
+	double freeStorage = 5; 
+}
+
+/*
+ * Main gRPC Service
+ *
+ * It will get used both in DB Controller and DB Node
+ */
 service Database {
-    // Simple ping method
-    rpc Ping(SimpleMessage) returns (SimpleMessage);
+	// Register DB Node
+	rpc RegisterNode (DBNodeData) returns (GrpcEmpty);
 
     // User
     rpc GetUser(GrpcEmpty) returns (GrpcUser);
