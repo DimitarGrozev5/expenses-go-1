@@ -2,82 +2,76 @@ package rpcserver
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
-	"time"
 
-	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
-	"github.com/dimitargrozev5/expenses-go-1/internal/repository/dbrepo"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 func (m *DatabaseServer) Authenticate(ctx context.Context, lc *models.LoginCredentials) (*models.LoginToken, error) {
 
 	var loginResponse models.LoginToken
 
-	// validate fields
-	if len(lc.Email) == 0 || len(lc.Password) == 0 {
-		return &loginResponse, fmt.Errorf("email and Password are required")
-	}
+	// // validate fields
+	// if len(lc.Email) == 0 || len(lc.Password) == 0 {
+	// 	return &loginResponse, fmt.Errorf("email and Password are required")
+	// }
 
-	// Check if user DB exists
-	_, err := os.Stat(dbrepo.GetUserDBPath(m.App.DBPath, lc.Email, true))
-	if errors.Is(err, os.ErrNotExist) {
+	// // Check if user DB exists
+	// _, err := os.Stat(dbrepo.GetUserDBPath(m.App.DBPath, lc.Email, true))
+	// if errors.Is(err, os.ErrNotExist) {
 
-		// Write to error log
-		m.App.ErrorLog.Println(err)
+	// 	// Write to error log
+	// 	m.App.ErrorLog.Println(err)
 
-		// Return error
-		return &loginResponse, fmt.Errorf("invalid login credentials")
-	}
+	// 	// Return error
+	// 	return &loginResponse, fmt.Errorf("invalid login credentials")
+	// }
 
-	// Create user connection
-	dbconn, err := driver.ConnectSQL(dbrepo.GetUserDBPath(m.App.DBPath, lc.Email, false))
-	if err != nil {
+	// // Create user connection
+	// dbconn, err := driver.ConnectSQL(dbrepo.GetUserDBPath(m.App.DBPath, lc.Email, false))
+	// if err != nil {
 
-		// Write to error log
-		m.App.ErrorLog.Println(err)
+	// 	// Write to error log
+	// 	m.App.ErrorLog.Println(err)
 
-		// Return error
-		return &loginResponse, fmt.Errorf("server error")
-	}
+	// 	// Return error
+	// 	return &loginResponse, fmt.Errorf("server error")
+	// }
 
-	// Get db repo
-	repo := dbrepo.NewSqliteRepo(m.App, lc.Email, dbconn.SQL)
+	// // Get db repo
+	// repo := dbrepo.NewSqliteRepo(m.App, lc.Email, dbconn.SQL)
 
-	// Authenticate user
-	_, _, dbVersion, err := repo.Authenticate(lc.Password)
-	if err != nil {
+	// // Authenticate user
+	// _, _, dbVersion, err := repo.Authenticate(lc.Password)
+	// if err != nil {
 
-		// Write to error log
-		m.App.ErrorLog.Println(err)
+	// 	// Write to error log
+	// 	m.App.ErrorLog.Println(err)
 
-		return &loginResponse, fmt.Errorf("invalid login credentials")
-	}
+	// 	return &loginResponse, fmt.Errorf("invalid login credentials")
+	// }
 
-	// Get user key
-	key := dbrepo.GetUserKey(lc.Email)
+	// // Get user key
+	// key := dbrepo.GetUserKey(lc.Email)
 
-	// Add connection to repo
-	m.App.DBConnections[key] = dbconn
-	m.App.DBRepos[key] = repo
+	// // Add connection to repo
+	// m.App.DBConnections[key] = dbconn
+	// m.App.DBRepos[key] = repo
 
-	// Crate JWT to authenticate user
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, //jwt.SigningMethodES256,
-		jwt.MapClaims{
-			"userKey":   key,
-			"dbVersion": dbVersion,
-			"exp":       time.Now().Add(time.Hour * 24).Unix(),
-		})
-	jwt, err := t.SignedString(m.App.JWTSecretKey)
-	if err != nil {
-		return &loginResponse, err
-	}
+	// // Crate JWT to authenticate user
+	// t := jwt.NewWithClaims(jwt.SigningMethodHS256, //jwt.SigningMethodES256,
+	// 	jwt.MapClaims{
+	// 		"userKey":   key,
+	// 		"dbVersion": dbVersion,
+	// 		"exp":       time.Now().Add(time.Hour * 24).Unix(),
+	// 	})
+	// jwt, err := t.SignedString(m.App.JWTSecretKey)
+	// if err != nil {
+	// 	return &loginResponse, err
+	// }
 
-	// Add token to response
-	loginResponse.Token = jwt
+	// // Add token to response
+	// loginResponse.Token = jwt
 
 	return &loginResponse, nil
 }

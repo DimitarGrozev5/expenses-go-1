@@ -6,8 +6,8 @@ import (
 	"log"
 	"net"
 
+	"github.com/dimitargrozev5/expenses-go-1/internal/dbnoderpc"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
-	"github.com/dimitargrozev5/expenses-go-1/internal/rpcserver"
 	"google.golang.org/grpc"
 )
 
@@ -44,13 +44,13 @@ func setupGrpcService() {
 	// }
 
 	// Create service
-	databaseServer := rpcserver.NewService(&app)
+	databaseServer := dbnoderpc.NewService(&app)
 
 	// Register server
-	rpcserver.NewDatabaseServer(databaseServer)
+	dbnoderpc.NewDatabaseServer(databaseServer)
 
 	// Add JWT token interceptor
-	opts = append(opts, grpc.UnaryInterceptor(rpcserver.Server.AuthInterceptor))
+	opts = append(opts, grpc.UnaryInterceptor(dbnoderpc.Server.AuthInterceptor))
 
 	// Create server
 	grpcServer := grpc.NewServer(opts...)

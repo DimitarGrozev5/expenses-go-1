@@ -22,8 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DatabaseClient interface {
-	// Simple ping method
-	Ping(ctx context.Context, in *SimpleMessage, opts ...grpc.CallOption) (*SimpleMessage, error)
+	// Register DB Node
+	RegisterNode(ctx context.Context, in *DBNodeData, opts ...grpc.CallOption) (*GrpcEmpty, error)
 	// User
 	GetUser(ctx context.Context, in *GrpcEmpty, opts ...grpc.CallOption) (*GrpcUser, error)
 	Authenticate(ctx context.Context, in *LoginCredentials, opts ...grpc.CallOption) (*LoginToken, error)
@@ -63,9 +63,9 @@ func NewDatabaseClient(cc grpc.ClientConnInterface) DatabaseClient {
 	return &databaseClient{cc}
 }
 
-func (c *databaseClient) Ping(ctx context.Context, in *SimpleMessage, opts ...grpc.CallOption) (*SimpleMessage, error) {
-	out := new(SimpleMessage)
-	err := c.cc.Invoke(ctx, "/Database/Ping", in, out, opts...)
+func (c *databaseClient) RegisterNode(ctx context.Context, in *DBNodeData, opts ...grpc.CallOption) (*GrpcEmpty, error) {
+	out := new(GrpcEmpty)
+	err := c.cc.Invoke(ctx, "/Database/RegisterNode", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -283,8 +283,8 @@ func (c *databaseClient) GetTimePeriods(ctx context.Context, in *GrpcEmpty, opts
 // All implementations must embed UnimplementedDatabaseServer
 // for forward compatibility
 type DatabaseServer interface {
-	// Simple ping method
-	Ping(context.Context, *SimpleMessage) (*SimpleMessage, error)
+	// Register DB Node
+	RegisterNode(context.Context, *DBNodeData) (*GrpcEmpty, error)
 	// User
 	GetUser(context.Context, *GrpcEmpty) (*GrpcUser, error)
 	Authenticate(context.Context, *LoginCredentials) (*LoginToken, error)
@@ -321,8 +321,8 @@ type DatabaseServer interface {
 type UnimplementedDatabaseServer struct {
 }
 
-func (UnimplementedDatabaseServer) Ping(context.Context, *SimpleMessage) (*SimpleMessage, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+func (UnimplementedDatabaseServer) RegisterNode(context.Context, *DBNodeData) (*GrpcEmpty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterNode not implemented")
 }
 func (UnimplementedDatabaseServer) GetUser(context.Context, *GrpcEmpty) (*GrpcUser, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
@@ -406,20 +406,20 @@ func RegisterDatabaseServer(s grpc.ServiceRegistrar, srv DatabaseServer) {
 	s.RegisterService(&Database_ServiceDesc, srv)
 }
 
-func _Database_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SimpleMessage)
+func _Database_RegisterNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DBNodeData)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DatabaseServer).Ping(ctx, in)
+		return srv.(DatabaseServer).RegisterNode(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Database/Ping",
+		FullMethod: "/Database/RegisterNode",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServer).Ping(ctx, req.(*SimpleMessage))
+		return srv.(DatabaseServer).RegisterNode(ctx, req.(*DBNodeData))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -846,8 +846,8 @@ var Database_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*DatabaseServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Ping",
-			Handler:    _Database_Ping_Handler,
+			MethodName: "RegisterNode",
+			Handler:    _Database_RegisterNode_Handler,
 		},
 		{
 			MethodName: "GetUser",

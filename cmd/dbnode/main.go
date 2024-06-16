@@ -9,9 +9,9 @@ func main() {
 	// Setup app state
 	setupAppState()
 
-	// Start gRPC server
-	setupGrpcService()
-
 	// Register with db controller
 	registerDBNode()
+
+	// Start gRPC server
+	setupGrpcService()
 }
