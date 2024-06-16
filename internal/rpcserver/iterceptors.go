@@ -21,7 +21,7 @@ func (s DatabaseServer) AuthInterceptor(ctx context.Context, req any, info *grpc
 	userCtx := ctx
 
 	// Skip auth for some methods
-	if !strings.HasSuffix(info.FullMethod, "/Authenticate") {
+	if !(strings.HasSuffix(info.FullMethod, "/Authenticate") || strings.HasSuffix(info.FullMethod, "/RegisterNode")) {
 		// authentication (token verification)
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

@@ -2,7 +2,6 @@ package dbnoderpc
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 )
@@ -18,8 +17,6 @@ func (m *DatabaseServer) RegisterNode(ctx context.Context, params *models.DBNode
 	// if err != nil {
 	// 	return nil, err
 	// }
-
-	fmt.Println(params)
 
 	return nil, nil
 }

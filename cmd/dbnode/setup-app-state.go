@@ -15,6 +15,7 @@ var infoLog *log.Logger
 var errorLog *log.Logger
 var dbPath = flag.String("db-path", "./db/", "Path to folder containing sqlite databases")
 var jwtSecretKey = flag.String("jwt-secret-key", "secret key", "Secret key for signing Json Web Tokens")
+var ctrlAddr = flag.String("ctrl-addr", "localhost:3002", "DB Controller address")
 
 // Setup app wide state
 func setupAppState() {
@@ -39,6 +40,9 @@ func setupAppState() {
 
 	// Set db path and name
 	app.DBPath = *dbPath
+
+	// Set controller address
+	app.ControllerAddress = *ctrlAddr
 
 	// // Read the PEM file
 	// pemData, err := os.ReadFile(*jwtKeyPath)
