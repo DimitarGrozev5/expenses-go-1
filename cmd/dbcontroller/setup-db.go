@@ -93,6 +93,9 @@ func setupDb() {
 		}
 	}
 
+	// Print migration message
+	app.InfoLog.Printf("Migrations performed: %d; Controller DB Version: %d", len(migrations), i-1)
+
 	// Commit migrations
 	tx.Commit()
 }
