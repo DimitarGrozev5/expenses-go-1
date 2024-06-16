@@ -6,11 +6,14 @@ import (
 	"log"
 	"net"
 
+	"github.com/dimitargrozev5/expenses-go-1/internal/jwtutil"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pbnjay/memory"
 	"github.com/ricochet2200/go-disk-usage/du"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 func registerDBNode() {
@@ -50,7 +53,18 @@ func registerDBNode() {
 		FreeStorage:  float64(usage.Available()),
 	}
 
-	_, err = client.RegisterNode(context.Background(), &props)
+	// Create jwt
+	jwt, err := jwtutil.Repo.Generate(jwt.MapClaims{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create context with metadata
+	md := metadata.Pairs("authorization", fmt.Sprintf("Bearer %s", jwt))
+	ctxWithMeta := metadata.NewOutgoingContext(context.Background(), md)
+
+	// Register node
+	_, err = client.RegisterNode(ctxWithMeta, &props)
 	if err != nil {
 		log.Fatal(err)
 	}

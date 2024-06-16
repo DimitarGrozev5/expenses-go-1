@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/dimitargrozev5/expenses-go-1/internal/jwtutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -21,7 +21,7 @@ func (s DatabaseServer) AuthInterceptor(ctx context.Context, req any, info *grpc
 	userCtx := ctx
 
 	// Skip auth for some methods
-	if !(strings.HasSuffix(info.FullMethod, "/Authenticate") || strings.HasSuffix(info.FullMethod, "/RegisterNode")) {
+	if !strings.HasSuffix(info.FullMethod, "/Authenticate") {
 		// authentication (token verification)
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
@@ -34,17 +34,8 @@ func (s DatabaseServer) AuthInterceptor(ctx context.Context, req any, info *grpc
 		}
 		token := strings.TrimPrefix(auth[0], "Bearer ")
 
-		// Parse Token
-		t, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-			return s.App.JWTSecretKey, nil
-		})
+		claims, err := jwtutil.Repo.Parse(token)
 		if err != nil {
-			return nil, errInvalidToken
-		}
-
-		// Get claims
-		claims, ok := t.Claims.(jwt.MapClaims)
-		if !ok {
 			return nil, errInvalidToken
 		}
 

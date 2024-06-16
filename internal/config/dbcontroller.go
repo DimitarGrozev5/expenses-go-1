@@ -21,3 +21,7 @@ type DBControllerConfig struct {
 	DBConnections  map[string]*driver.DB
 	DBRepos        map[string]repository.DatabaseRepo
 }
+
+func (c DBControllerConfig) GetJWTSecretKey() []byte {
+	return c.JWTSecretKey
+}

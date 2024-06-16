@@ -18,3 +18,7 @@ type DBNodeConfig struct {
 	DBConnections     map[string]*driver.DB
 	DBRepos           map[string]repository.DatabaseRepo
 }
+
+func (c DBNodeConfig) GetJWTSecretKey() []byte {
+	return c.JWTSecretKey
+}

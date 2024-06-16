@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
+	"github.com/dimitargrozev5/expenses-go-1/internal/jwtutil"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
 )
 
@@ -64,4 +65,7 @@ func setupAppState() {
 
 	// Set jwt key
 	app.JWTSecretKey = []byte(*jwtSecretKey)
+
+	// Setup jwtutils
+	jwtutil.NewJWTUtil(app)
 }
