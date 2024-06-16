@@ -13,14 +13,14 @@ import (
 type DatabaseServer struct {
 	models.UnimplementedDatabaseServer
 
-	App *config.DBNodeConfig
+	App *config.DBControllerConfig
 }
 
 // Repository used by the RPC commands
 var Server *DatabaseServer
 
 // Creates a new repsoitory
-func NewService(a *config.DBNodeConfig) *DatabaseServer {
+func NewService(a *config.DBControllerConfig) *DatabaseServer {
 	return &DatabaseServer{
 		App: a,
 	}
