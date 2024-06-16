@@ -14,7 +14,9 @@ var dbRepo = map[string]repository.DatabaseRepo{}
 var infoLog *log.Logger
 var errorLog *log.Logger
 var dbPath = flag.String("db-path", "./db/", "Path to folder containing sqlite databases")
+var migrationsPath = flag.String("migrations-path", "./migrations/", "Path to folder containing sqlite migrations")
 var jwtSecretKey = flag.String("jwt-secret-key", "secret key", "Secret key for signing Json Web Tokens")
+var dbCtrlName = flag.String("db-name", "ctrl.db", "Controller DB name")
 
 // Setup app wide state
 func setupAppState() {
@@ -37,8 +39,10 @@ func setupAppState() {
 	app.DBConnections = dbConn
 	app.DBRepos = dbRepo
 
-	// Set db path
+	// Set db path and name
 	app.DBPath = *dbPath
+	app.DBName = *dbCtrlName
+	app.MigrationsPath = *migrationsPath
 
 	// // Read the PEM file
 	// pemData, err := os.ReadFile(*jwtKeyPath)

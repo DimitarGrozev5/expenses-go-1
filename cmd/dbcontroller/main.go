@@ -12,6 +12,12 @@ func main() {
 	// Setup app
 	setupAppState()
 
+	// Setup and connect to DB
+	setupDb()
+
+	// Close db connection on exit
+	defer app.CtrlDB.Close()
+
 	// Setup grpc service
 	setupGrpcService()
 }
