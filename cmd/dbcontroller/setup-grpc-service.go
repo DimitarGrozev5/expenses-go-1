@@ -2,13 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
-	"net"
-
-	"github.com/dimitargrozev5/expenses-go-1/internal/models"
-	"github.com/dimitargrozev5/expenses-go-1/internal/rpcserver"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -21,44 +14,44 @@ var (
 
 func setupGrpcService() {
 
-	// Start listening on specified port
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-
-	// Setup grpc server
-	var opts []grpc.ServerOption
-	// if *tls {
-	// 	if *certFile == "" {
-	// 		*certFile = data.Path("x509/server_cert.pem")
-	// 	}
-	// 	if *keyFile == "" {
-	// 		*keyFile = data.Path("x509/server_key.pem")
-	// 	}
-	// 	creds, err := credentials.NewServerTLSFromFile(*certFile, *keyFile)
-	// 	if err != nil {
-	// 		log.Fatalf("Failed to generate credentials: %v", err)
-	// 	}
-	// 	opts = []grpc.ServerOption{grpc.Creds(creds)}
+	// // Start listening on specified port
+	// lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
+	// if err != nil {
+	// 	log.Fatalf("failed to listen: %v", err)
 	// }
 
-	// Create service
-	databaseServer := rpcserver.NewService(&app)
+	// // Setup grpc server
+	// var opts []grpc.ServerOption
+	// // if *tls {
+	// // 	if *certFile == "" {
+	// // 		*certFile = data.Path("x509/server_cert.pem")
+	// // 	}
+	// // 	if *keyFile == "" {
+	// // 		*keyFile = data.Path("x509/server_key.pem")
+	// // 	}
+	// // 	creds, err := credentials.NewServerTLSFromFile(*certFile, *keyFile)
+	// // 	if err != nil {
+	// // 		log.Fatalf("Failed to generate credentials: %v", err)
+	// // 	}
+	// // 	opts = []grpc.ServerOption{grpc.Creds(creds)}
+	// // }
 
-	// Register server
-	rpcserver.NewDatabaseServer(databaseServer)
+	// // Create service
+	// databaseServer := rpcserver.NewService(&app)
 
-	// Add JWT token interceptor
-	opts = append(opts, grpc.UnaryInterceptor(rpcserver.Server.AuthInterceptor))
+	// // Register server
+	// rpcserver.NewDatabaseServer(databaseServer)
 
-	// Create server
-	grpcServer := grpc.NewServer(opts...)
+	// // Add JWT token interceptor
+	// opts = append(opts, grpc.UnaryInterceptor(rpcserver.Server.AuthInterceptor))
 
-	// Register server
-	models.RegisterDatabaseServer(grpcServer, databaseServer)
+	// // Create server
+	// grpcServer := grpc.NewServer(opts...)
 
-	// Start grpc server
-	fmt.Printf("Starting gRPC server on port %d", *port)
-	grpcServer.Serve(lis)
+	// // Register server
+	// models.RegisterDatabaseServer(grpcServer, databaseServer)
+
+	// // Start grpc server
+	// fmt.Printf("Starting gRPC server on port %d", *port)
+	// grpcServer.Serve(lis)
 }

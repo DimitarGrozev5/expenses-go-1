@@ -19,5 +19,5 @@ func main() {
 	defer app.CtrlDB.Close()
 
 	// Setup grpc service
-	setupGrpcService()
+	// setupGrpcService()
 }
