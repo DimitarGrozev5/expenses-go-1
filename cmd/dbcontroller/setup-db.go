@@ -67,7 +67,7 @@ func setupDb() {
 		i++
 
 		// Try to get file
-		file, err := os.ReadFile(app.MigrationsPath + fmt.Sprintf("ctrl-up-%d.sql", i))
+		file, err := os.ReadFile(app.MigrationsPath + fmt.Sprintf("ctrl-%d-up.sql", i))
 
 		// Exit if migration not found
 		if os.IsNotExist(err) {
