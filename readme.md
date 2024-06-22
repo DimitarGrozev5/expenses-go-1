@@ -73,7 +73,7 @@ For Stage 2 the project is split in to two parts. First we have the main server 
 
 ### Stage 3
 
-For Stage 3 a DB Node server is created, that will host individual SQLite files with the goal to make the system horizontally scalable. When the available server resources are spent, a new DB Node can be started. It will copy a part of the DBs and will handle interacting with them. At this stage the DB Controller will become a router that passes the incoming rpc requests to the apropriate DB Node and tracks Node usage so it can recomend a scale up or down. For this reason dedicated DB is needed, to store all of the user files and the Nodes.
+For Stage 3 a DB Node server is created, that will host individual SQLite files with the goal to make the system horizontally scalable. When the available server resources are spent, a new DB Node can be started. It will copy a part of the DBs and will handle interacting with them. At this stage the DB Controller will become a router that passes the incoming rpc requests to the apropriate DB Node and tracks Node usage so it can recomend a scale up or down. For this reason dedicated DB is needed, to store all of the user files and the Nodes. Also work on the admin cli is started. The Admin CLI is used to manage the controller DB.
 
 ## Project elements
 
@@ -140,3 +140,26 @@ The database controller takes care of interacting with the database and authenti
 #### Handlers
 
 Handlers now have access to a DBClient object, that provides an interface for communicating with the remove DB Controller server.
+
+### Stage 3
+
+#### DBController Database
+
+The DB Controller has it's own dedicated DB, that stores information about the users and the addresses of DB Nodes.
+
+#### DB Controller
+
+The DB Controller routes the communication between the Web app and the DB Node that host the SQLite file for the specific user.
+
+#### DB Node
+
+There can be multiple DB Nodes. Each Node hosts one ore more user db files. When the Node is first run it registers it's address with the DB Controller and gets a part of the user DBs assigned to it.
+
+#### Admin CLI
+
+The Admin CLI is used to manage the system. On this stage it is used in a couple of workflows:
+1. When adding a new DB Node instance, firstly the admin has to create a row for the new node with `admin dbnodes new`. Then the id of the new row is provided to the DB Node so it can register itself on first run
+
+2. When adding a new user, firstly the user is registered with `admin uesrs add`. The newly created user has to be assigned to a DB Node. When the DB Controller picks up the new user it will send a command to the DB Node to create a db for the user.
+
+It has to be mentioned that this process is a bit stupid. A user should be able to register without the involvement of an admin and also the admin shouldn't be able to set the user password. In an actual production ready app this would be true, but since I am the only user, it's just a convenience feature so I don't have to work on registration.

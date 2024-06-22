@@ -25,7 +25,7 @@ func main() {
 	repo := dbrepo.NewSqliteRepo(&config.DBControllerConfig{}, db.SQL)
 
 	// Init commands
-	cmd.InitCmdRepo(repo)
+	cmd.InitCmdRepo(db, repo)
 
 	cmd.Execute()
 }
