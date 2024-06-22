@@ -27,3 +27,7 @@ type DBControllerConfig struct {
 func (c DBControllerConfig) GetJWTSecretKey() []byte {
 	return c.JWTSecretKey
 }
+
+func (c DBControllerConfig) GetInProduction() bool {
+	return c.InProduction
+}

@@ -22,3 +22,7 @@ type DBNodeConfig struct {
 func (c DBNodeConfig) GetJWTSecretKey() []byte {
 	return c.JWTSecretKey
 }
+
+func (c DBNodeConfig) GetInProduction() bool {
+	return c.InProduction
+}

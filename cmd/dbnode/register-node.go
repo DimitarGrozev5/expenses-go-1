@@ -4,21 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
-	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/jwtutil"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
+	"github.com/dimitargrozev5/expenses-go-1/internal/sysinfo"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/pbnjay/memory"
-	"github.com/ricochet2200/go-disk-usage/du"
-	"github.com/shirou/gopsutil/cpu"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
-
-var MB float64 = 1024 * 1024
 
 func registerDBNode() {
 
@@ -36,30 +30,8 @@ func registerDBNode() {
 	// Create gRPC client
 	client := models.NewDatabaseClient(conn)
 
-	// Get current address
-	address := getLocalIP()
-	if !app.InProduction {
-		address = "127.0.0.1"
-	}
-
-	// Add port
-	address = fmt.Sprintf("%s:%d", address, *port)
-
-	// Get disk usage
-	usage := du.NewDiskUsage(".")
-
-	// Get CPU load percentage over 1 second interval
-	percent, _ := cpu.Percent(time.Second, false)
-
-	// Create props
-	props := models.DBNodeData{
-		Address:        address,
-		TotalMemoryMB:  float64(memory.TotalMemory()) / MB,
-		FreeMemoryMB:   float64(memory.FreeMemory()) / MB,
-		TotalStorageMB: float64(usage.Size()) / MB,
-		FreeStorageMB:  float64(usage.Available()) / MB,
-		CpuLoadPercent: percent[0],
-	}
+	// Get system info
+	props := sysinfo.Overview()
 
 	// Create jwt
 	jwt, err := jwtutil.Repo.Generate(jwt.MapClaims{})
@@ -76,16 +48,4 @@ func registerDBNode() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func getLocalIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	localAddress := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddress.IP.String()
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/jwtutil"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
+	"github.com/dimitargrozev5/expenses-go-1/internal/sysinfo"
 )
 
 var dbConn = map[string]*driver.DB{}
@@ -66,6 +67,7 @@ func setupAppState() {
 	// Set jwt key
 	app.JWTSecretKey = []byte(*jwtSecretKey)
 
-	// Setup jwt utils
+	// Setup modules
 	jwtutil.NewJWTUtil(app)
+	sysinfo.NewSysinfo(app, *port)
 }
