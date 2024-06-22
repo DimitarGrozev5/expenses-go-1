@@ -11,5 +11,13 @@ import (
 func (m *DatabaseServer) RegisterNode(ctx context.Context, params *models.DBNodeData) (*models.GrpcEmpty, error) {
 	fmt.Println(params)
 
+	// Get db
+	db := m.App.CtrlDBRepo
+
+	_, err := db.RegisterNode(params)
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }

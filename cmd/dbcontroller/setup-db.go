@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"time"
+
+	"github.com/dimitargrozev5/expenses-go-1/internal/ctrlrepo/dbrepo"
+	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 )
 
 func setupDb() {
@@ -27,20 +28,26 @@ func setupDb() {
 	// // }
 
 	// Open db connection
-	db, err := sql.Open("sqlite3", fmt.Sprintf("%s.db?_fk=%s", app.DBPath+app.DBName, url.QueryEscape("true")))
+	db, err := driver.ConnectSQL(dbrepo.GetDBPath(app.DBPath, app.DBName, false))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Add connection to state
-	app.CtrlDB = db
+	app.CtrlDB = db.SQL
+
+	// Start Controller repo
+	repo := dbrepo.NewSqliteRepo(&app, db.SQL)
+
+	// Add repo to state
+	app.CtrlDBRepo = repo
 
 	// Setup new context
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// Get DB Version
-	row := db.QueryRowContext(ctx, `PRAGMA user_version`)
+	row := db.SQL.QueryRowContext(ctx, `PRAGMA user_version`)
 
 	// Pull data from row
 	var userVersion int
@@ -77,7 +84,7 @@ func setupDb() {
 	}
 
 	// Start transaction
-	tx, err := db.Begin()
+	tx, err := db.SQL.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}

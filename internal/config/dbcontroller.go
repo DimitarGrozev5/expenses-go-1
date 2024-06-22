@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 
+	"github.com/dimitargrozev5/expenses-go-1/internal/ctrlrepo"
 	"github.com/dimitargrozev5/expenses-go-1/internal/driver"
 	"github.com/dimitargrozev5/expenses-go-1/internal/repository"
 )
@@ -14,6 +15,7 @@ type DBControllerConfig struct {
 	DBPath         string
 	DBName         string
 	CtrlDB         *sql.DB
+	CtrlDBRepo     ctrlrepo.ControllerRepository
 	MigrationsPath string
 	JWTSecretKey   []byte //*ecdsa.PrivateKey
 	InfoLog        *log.Logger
