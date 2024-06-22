@@ -9,6 +9,7 @@ import (
 
 // AppConfig holds the application config
 type DBNodeConfig struct {
+	NodeID            int64
 	InProduction      bool
 	ControllerAddress string
 	DBPath            string

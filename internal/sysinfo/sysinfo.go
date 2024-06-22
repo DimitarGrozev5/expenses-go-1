@@ -14,15 +14,17 @@ import (
 )
 
 type SysinfoData struct {
-	app  config.Config
-	port int
+	app    config.Config
+	port   int
+	nodeId int64
 }
 
 var data SysinfoData
 
-func NewSysinfo(a config.Config, port int) {
+func NewSysinfo(a config.Config, port int, nodeId int64) {
 	data.app = a
 	data.port = port
+	data.nodeId = nodeId
 }
 
 var MB float64 = 1024 * 1024
@@ -46,6 +48,7 @@ func Overview() models.DBNodeData {
 
 	// Create props
 	return models.DBNodeData{
+		ID:             data.nodeId,
 		Address:        address,
 		TotalMemoryMB:  float64(memory.TotalMemory()) / MB,
 		FreeMemoryMB:   float64(memory.FreeMemory()) / MB,

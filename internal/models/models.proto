@@ -237,6 +237,7 @@ message GetTimePeriodsReturns {
 }
 
 message DBNodeData {
+	int64  ID = 7;
 	string address = 1;
 	double totalMemoryMB = 2;
 	double freeMemoryMB = 3;

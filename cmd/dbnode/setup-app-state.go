@@ -15,6 +15,7 @@ var dbConn = map[string]*driver.DB{}
 var dbRepo = map[string]repository.DatabaseRepo{}
 var infoLog *log.Logger
 var errorLog *log.Logger
+var id = flag.Int64("nodeID", 0, "Node ID from the Controller DB")
 var dbPath = flag.String("db-path", "./db/", "Path to folder containing sqlite databases")
 var jwtSecretKey = flag.String("jwt-secret-key", "secret key", "Secret key for signing Json Web Tokens")
 var ctrlAddr = flag.String("ctrl-addr", "localhost:3002", "DB Controller address")
@@ -46,6 +47,9 @@ func setupAppState() {
 	// Set controller address
 	app.ControllerAddress = *ctrlAddr
 
+	// Set node id
+	app.NodeID = *id
+
 	// // Read the PEM file
 	// pemData, err := os.ReadFile(*jwtKeyPath)
 	// if err != nil {
@@ -69,5 +73,5 @@ func setupAppState() {
 
 	// Setup modules
 	jwtutil.NewJWTUtil(app)
-	sysinfo.NewSysinfo(app, *port)
+	sysinfo.NewSysinfo(app, *port, *id)
 }
