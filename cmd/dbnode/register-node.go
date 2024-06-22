@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/dimitargrozev5/expenses-go-1/internal/jwtutil"
 	"github.com/dimitargrozev5/expenses-go-1/internal/models"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pbnjay/memory"
 	"github.com/ricochet2200/go-disk-usage/du"
+	"github.com/shirou/gopsutil/cpu"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
+
+var MB float64 = 1024 * 1024
 
 func registerDBNode() {
 
@@ -44,13 +48,17 @@ func registerDBNode() {
 	// Get disk usage
 	usage := du.NewDiskUsage(".")
 
+	// Get CPU load percentage over 1 second interval
+	percent, _ := cpu.Percent(time.Second, false)
+
 	// Create props
 	props := models.DBNodeData{
-		Address:      address,
-		TotalMemory:  float64(memory.TotalMemory()),
-		FreeMemory:   float64(memory.FreeMemory()),
-		TotalStorage: float64(usage.Size()),
-		FreeStorage:  float64(usage.Available()),
+		Address:        address,
+		TotalMemoryMB:  float64(memory.TotalMemory()) / MB,
+		FreeMemoryMB:   float64(memory.FreeMemory()) / MB,
+		TotalStorageMB: float64(usage.Size()) / MB,
+		FreeStorageMB:  float64(usage.Available()) / MB,
+		CpuLoadPercent: percent[0],
 	}
 
 	// Create jwt
