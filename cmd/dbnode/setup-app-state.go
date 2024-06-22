@@ -15,7 +15,7 @@ var dbConn = map[string]*driver.DB{}
 var dbRepo = map[string]repository.DatabaseRepo{}
 var infoLog *log.Logger
 var errorLog *log.Logger
-var id = flag.Int64("nodeID", 0, "Node ID from the Controller DB")
+var id = flag.Int64("node-id", 0, "Node ID from the Controller DB")
 var dbPath = flag.String("db-path", "./db/", "Path to folder containing sqlite databases")
 var jwtSecretKey = flag.String("jwt-secret-key", "secret key", "Secret key for signing Json Web Tokens")
 var ctrlAddr = flag.String("ctrl-addr", "localhost:3002", "DB Controller address")

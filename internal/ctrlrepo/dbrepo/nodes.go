@@ -83,16 +83,26 @@ func (m *sqliteDBRepo) NewNode() (int64, error) {
 }
 
 func (m *sqliteDBRepo) RegisterNode(params *models.DBNodeData) (*models.GrpcEmpty, error) {
-	// // Define context with timeout
-	// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	// defer cancel()
+	// Define context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-	// // Start transaction
-	// tx, err := m.DB.Begin()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer tx.Rollback()
+	// Start transaction
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
 
+	// Define query to insert account
+	stmt := `UPDATE db_nodes SET remote_address=$1 WHERE id=$2`
+
+	// Execute query
+	_, err = tx.ExecContext(ctx, stmt, params.Address, params.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.Commit()
 	return nil, nil
 }
