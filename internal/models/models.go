@@ -5,6 +5,18 @@ import (
 	"time"
 )
 
+// DB Node
+type DBNode struct {
+	ID            int64
+	RemoteAddress string
+	CreatedAt     time.Time
+	UpdatedAt     sql.NullTime
+}
+
+/**
+		TODO: From here down possibly depricated
+**/
+
 // Users
 type User struct {
 	ID        int

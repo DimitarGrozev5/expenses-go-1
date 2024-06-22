@@ -4,5 +4,7 @@ import "github.com/dimitargrozev5/expenses-go-1/internal/models"
 
 type ControllerRepository interface {
 	// Node actions
+	GetNodes() ([]models.DBNode, error)
+	NewNode() (int64, error)
 	RegisterNode(params *models.DBNodeData) (*models.GrpcEmpty, error)
 }

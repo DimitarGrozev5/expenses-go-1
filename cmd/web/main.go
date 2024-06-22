@@ -70,7 +70,6 @@ func run(conn *grpc.ClientConn) error {
 	// fmt.Println(string(res))
 
 	// Register models to Session
-	gob.Register(models.User{})
 	gob.Register(models.Expense{})
 	gob.Register(forms.Form{})
 	gob.Register(map[string]*forms.Form{})
