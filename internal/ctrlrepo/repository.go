@@ -6,8 +6,13 @@ type ControllerRepository interface {
 	// DB status
 	GetVersion() (int64, error)
 
+	// Users
+	GetMinUserVersion() (int64, error)
+	GetMaxUserVersion() (int64, error)
+
 	// Node actions
 	GetNodes() ([]models.DBNode, error)
+	GetActiveNodes() ([]models.DBNode, error)
 	NewNode() (int64, error)
 	RegisterNode(params *models.DBNodeData) (*models.GrpcEmpty, error)
 }
