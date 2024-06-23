@@ -49,3 +49,7 @@ func (m sqliteDBRepo) GetMaxUserVersion() (int64, error) {
 
 	return 0, nil
 }
+
+func (m sqliteDBRepo) AddNewUser(email string, version int64) error {
+	return nil
+}

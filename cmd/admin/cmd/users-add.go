@@ -79,17 +79,6 @@ var usersAddCmd = &cobra.Command{
 			return
 		}
 
-		// Get user password
-		passPrompt := promptui.Prompt{
-			Label:    "Enter user password (yeah I know this is stupid)",
-			Validate: validPass,
-		}
-		userPass, err := passPrompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return
-		}
-
 		// Get user version
 		dbVersionPrompot := promptui.Prompt{
 			Label:    fmt.Sprintf("Enter db version (%d:%d; newest %d)", minVer, maxVer, i),
@@ -101,13 +90,21 @@ var usersAddCmd = &cobra.Command{
 			return
 		}
 
+		// Parse input
 		parsedMail, _ := mail.ParseAddress(email)
 		userEmail := parsedMail.Address
 		dbVersion, _ := strconv.ParseInt(dbVersionString, 10, 64)
 
 		fmt.Println(userEmail)
-		fmt.Printf("You choose %q\n", userPass)
 		fmt.Printf("You choose %q\n", dbVersion)
+
+		// Add user
+		err = Repo.CtrlDB.AddNewUser(userEmail, dbVersion)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("User added")
 
 		fmt.Printf("\n\n")
 	},
