@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -87,8 +88,6 @@ var migrateStepCmd = &cobra.Command{
 				path = migrationsPath + fmt.Sprintf("ctrl-%d-down.sql", i)
 			}
 
-			fmt.Println(path)
-
 			// Try to get up file
 			file, err := os.ReadFile(path)
 
@@ -123,8 +122,11 @@ var migrateStepCmd = &cobra.Command{
 			}
 		}
 
+		// Commit migrations
+		tx.Commit()
+
 		// Print migration message
-		fmt.Printf("Migrations performed: %d\n", target)
+		fmt.Printf("Migrations performed: %.0f\n", math.Abs(float64(target-userVersion)))
 
 		// Get user version
 		userVersion, err = Repo.CtrlDB.GetVersion()
@@ -133,10 +135,5 @@ var migrateStepCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Controller DB Version: %d\n\n", userVersion)
-
-		fmt.Printf("\nController Initial DB Version: %d\n", userVersion)
-
-		// Commit migrations
-		tx.Commit()
 	},
 }
