@@ -9,7 +9,7 @@ type ControllerRepository interface {
 	// Users
 	GetMinUserVersion() (int64, error)
 	GetMaxUserVersion() (int64, error)
-	AddNewUser(email string, version int64) error
+	AddNewUser(email string, password string, version int64) error
 
 	// Node actions
 	GetNodes() ([]models.DBNode, error)
