@@ -151,9 +151,13 @@ The DB Controller has it's own dedicated DB, that stores information about the u
 
 The DB Controller routes the communication between the Web app and the DB Node that host the SQLite file for the specific user.
 
+ On the DB Controller runs a script that look for new users and passes them to the most appropriate DB Node
+
 #### DB Node
 
 There can be multiple DB Nodes. Each Node hosts one ore more user db files. When the Node is first run it registers it's address with the DB Controller and gets a part of the user DBs assigned to it.
+
+When the DB Node receives a new user it creates a DB for him.
 
 #### Admin CLI
 
